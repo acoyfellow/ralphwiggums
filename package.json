@@ -50,6 +50,7 @@
     "dev": " lsof -ti:5153 | xargs kill -9 && alchemy dev",
     "dev:start": "./dev.sh start",
     "dev:stop": "./dev.sh stop",
+    "dev:container": "source .env && PORT=8081 bun run container/server.ts",
     "deploy": "alchemy deploy --stage prod",
     "destroy": "alchemy destroy",
     "prepare": "svelte-kit sync || echo ''",

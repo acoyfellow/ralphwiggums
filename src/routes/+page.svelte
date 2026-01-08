@@ -133,7 +133,7 @@ console.log(result.data);`;
       <div
         class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-800 border border-slate-700 rounded text-[11px] text-slate-400 before:content-[''] before:w-1.5 before:h-1.5 before:bg-green-500 before:rounded-full"
       >
-        v1.0.0 · stable
+        v0.0.1
       </div>
     </div>
 

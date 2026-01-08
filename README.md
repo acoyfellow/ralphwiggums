@@ -132,32 +132,55 @@ npm install ralphwiggums
 
 ## Local Development
 
-This library requires a **two-terminal setup** for local development (see Architecture section above for why):
+ralphwiggums requires a **two-terminal setup** for local development because Cloudflare Workers can't run browsers directly.
 
+### Setup
+
+**Terminal 1: Container server** (runs browser automation)
 ```bash
-# Terminal 1: Container server (browser automation)
-cd /path/to/ralphwiggums
+# From the ralphwiggums directory
 source .env
 PORT=8081 bun run --hot container/server.ts
 ```
 
-Verify the container is running:
+**Terminal 2: SvelteKit app** (API endpoints + demo UI)
 ```bash
-curl http://localhost:8081/health
-# Should return: {"success":true,"data":{"status":"healthy","browser":false}}
-```
-
-```bash
-# Terminal 2: Worker (API endpoints)
-cd /path/to/ralphwiggums
-export CONTAINER_URL=http://localhost:8081
+# From the ralphwiggums directory
 bun run dev
 ```
 
-**Troubleshooting**: If you see "Browser binding not set" or "Container binding not set" errors, make sure:
-1. Container server is running on port 8081
-2. `CONTAINER_URL` is exported in Terminal 2
-3. Port 8081 is not already in use (change `PORT` env var if needed)
+Visit http://localhost:5173 to use the demo UI, or call the API directly at http://localhost:5173/api/.
+
+### Verify Everything Works
+
+```bash
+# Check container is running
+curl http://localhost:8081/health
+# Expected: {"success":true,"data":{"status":"healthy","browser":false}}
+
+# Check worker is responding
+curl http://localhost:5173/health
+# Expected: {"status":"healthy",...}
+```
+
+### One-Command Startup (Optional)
+
+For convenience, use the provided script to start both terminals:
+
+```bash
+# Starts both container and dev server in one command
+./dev.sh
+```
+
+Stop with `Ctrl+C` (stops both terminals).
+
+### Troubleshooting
+
+| Error | Fix |
+|-------|-----|
+| "Container binding not set" | Container server isn't running. Start Terminal 1. |
+| ECONNREFUSED on port 8081 | Port in use. Kill existing: `lsof -ti:8081 | xargs kill` |
+| Browser won't start | Check `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` is set in `.env` |
 
 ## Usage
 
@@ -226,10 +249,7 @@ export class RalphAgent extends DurableObject {
 
 **Local Development:**
 
-The worker automatically falls back to `CONTAINER_URL` environment variable if Container binding is not available. Fallback order:
-1. Container binding (`env.CONTAINER`) - production
-2. `CONTAINER_URL` environment variable - local dev
-3. `http://localhost:8081` - default local dev
+The worker automatically falls back to `http://localhost:8081` when no Container binding is available. No configuration needed.
 
 ## Advanced: Checkpoints
 
@@ -312,12 +332,10 @@ See `alchemy.run.ts` for infrastructure configuration.
 
 ## Troubleshooting
 
-### "Browser binding not set" or "Container binding not set"
+### "Container binding not set"
 
 **Local dev:**
-- Ensure container server is running: `curl http://localhost:8081/health`
-- Check `CONTAINER_URL` is exported: `echo $CONTAINER_URL`
-- Verify port 8081 is not in use: `lsof -ti:8081`
+- Container server isn't running. Start Terminal 1 with `./dev.sh` or manually.
 
 **Production:**
 - Verify Container binding is configured in `alchemy.run.ts`
@@ -374,7 +392,7 @@ ralphwiggums provides two exports:
 ## Tests
 
 ```bash
-# Run all tests (unit + E2E if CONTAINER_URL is set)
+# Run tests (E2E tests require container server running)
 bun test
 ```
 

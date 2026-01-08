@@ -39,14 +39,11 @@ const browserContainer = await Container("ralph-container", {
     dockerfile: "Dockerfile",
     platform: "linux/amd64",
   },
-  envVars: {
-    ANTHROPIC_API_KEY: alchemy.secret(process.env.ANTHROPIC_API_KEY ?? ""),
-    OPENAI_API_KEY: alchemy.secret(process.env.OPENAI_API_KEY ?? ""),
-  },
 });
 
 // Worker that handles extraction requests
 const worker = await Worker("ralphwiggums-api", {
+  domains: ["ralphwiggums-api.coey.dev"],
   entrypoint: "./src/worker.ts",
   adopt: true,
   bindings: {
@@ -61,6 +58,7 @@ const worker = await Worker("ralphwiggums-api", {
 
 // SvelteKit demo app
 export const DEMO = await SvelteKit("ralphwiggums-demo", {
+  domains: ["ralphwiggums.coey.dev"],
   bindings: {
     WORKER: worker,
     CONTAINER_URL: process.env.CONTAINER_URL ?? "http://localhost:8081",
