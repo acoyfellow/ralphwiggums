@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test
+coverage/
+.nyc_output/
+
+# Dev files (not needed in npm package)
+.sisypusus/
+.deprecated/
+scripts/
+marketing/
+example/
+demo/
+container/
+Alchemy/
+alchemy.run.ts
+alchemy-types.d.ts
+Dockerfile
+.stop.sh
+.dev.sh
+dev.sh
+stop.sh
+post-launch/
+
+# Misc
+.DS_Store
+*.pem
+.env
+.env.local
+

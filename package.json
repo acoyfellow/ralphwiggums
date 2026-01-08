@@ -1,0 +1,91 @@
+{
+  "name": "ralphwiggums",
+  "version": "0.0.1",
+  "description": "Ralph Wiggum agent for web automation - Effect-first browser automation on Cloudflare Workers",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./checkpoint-do": {
+      "import": "./dist/checkpoint-do.js",
+      "types": "./dist/checkpoint-do.d.ts"
+    }
+  },
+  "files": [
+    "LICENSE",
+    "README.md",
+    "dist/index.js",
+    "dist/index.d.ts",
+    "dist/checkpoint-do.js",
+    "dist/checkpoint-do.d.ts"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/acoyfellow/ralphwiggums"
+  },
+  "license": "MIT",
+  "keywords": [
+    "browser-automation",
+    "cloudflare-workers",
+    "effect-ts",
+    "stagehand",
+    "ai-agent",
+    "web-automation",
+    "form-filling"
+  ],
+  "author": "Jordan Coeyman <jordan@coey.dev>",
+  "bugs": {
+    "url": "https://github.com/acoyfellow/ralphwiggums/issues"
+  },
+  "homepage": "https://github.com/acoyfellow/ralphwiggums#readme",
+  "scripts": {
+    "build": "vite build && tsc",
+    "test": "bun test",
+    "watch": "tsc --watch",
+    "clean_docker": "",
+    "dev": " lsof -ti:5153 | xargs kill -9 && alchemy dev",
+    "dev:start": "./dev.sh start",
+    "dev:stop": "./dev.sh stop",
+    "deploy": "alchemy deploy --stage prod",
+    "destroy": "alchemy destroy",
+    "prepare": "svelte-kit sync || echo ''",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+  },
+  "dependencies": {
+    "@types/node": "^25.0.3",
+    "alchemy": "^0.83.0",
+    "effect": "^3.19.14",
+    "hono": "^4.11.3"
+  },
+  "devDependencies": {
+    "@browserbasehq/stagehand": "^3.0.7",
+    "@cloudflare/containers": "^0.0.31",
+    "@cloudflare/kv-asset-handler": "^0.4.1",
+    "@cloudflare/workers-types": "^4.20260103.0",
+    "@sveltejs/adapter-cloudflare": "^7.2.4",
+    "@sveltejs/kit": "^2.49.1",
+    "@sveltejs/vite-plugin-svelte": "^6.2.1",
+    "@tailwindcss/vite": "^4.1.18",
+    "@types/ws": "^8.18.1",
+    "svelte": "^5.45.6",
+    "svelte-check": "^4.3.4",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.6",
+    "vitest": "^4.0.16",
+    "zod": "^4.3.5"
+  },
+  "peerDependencies": {
+    "@cloudflare/containers": "^0.0.30",
+    "@cloudflare/workers-types": "^4.0.0",
+    "zod": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
