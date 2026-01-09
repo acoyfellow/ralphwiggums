@@ -65,25 +65,6 @@
       "completed_at": "2026-01-07T11:45:00Z"
     },
     {
-      "id": "003",
-      "title": "Add E2E tests that prove the API works",
-      "status": "pending",
-      "priority": "P0",
-      "description": "Write tests that exercise the full flow from run() to container to browser",
-      "acceptance_criteria": [
-        "Test: Basic action (navigate, click)",
-        "Test: Form filling (name, email, message)",
-        "Test: Extraction (page title, text)",
-        "Test: Retry logic (max iterations)",
-        "Test: Timeout handling",
-        "Tests run in local dev environment",
-        "Tests pass consistently (no flakiness)"
-      ],
-      "dependencies": ["002"],
-      "new_files": ["src/__tests__/e2e.test.ts"],
-      "verification": "bun test && watch for 100% pass rate across 5 runs"
-    },
-    {
       "id": "004",
       "title": "Package for npm publishing",
       "status": "completed",
@@ -137,9 +118,9 @@
       ],
       "dependencies": ["004"],
       "files_to_deploy": ["src/index.ts", "container/server.ts", "demo/worker.ts"],
-      "verification": "Deployment setup verified - requires ANTHROPIC_API_KEY or OPENAI_API_KEY in .env to deploy",
+      "verification": "Deployment setup verified - requires CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN in .env to deploy",
       "completed_at": "2026-01-07T11:58:00Z",
-      "notes": "Can't deploy without AI API keys - this is expected behavior. Users must set their own keys before deployment."
+      "notes": "Can't deploy without AI credentials - this is expected behavior. Users must set their own keys before deployment."
     },
     {
       "id": "007",
@@ -175,31 +156,161 @@
       "files_to_modify": ["marketing/index2.html"],
       "verification": "Frontend agent fixed submit button state management and spinner visibility",
       "completed_at": "2026-01-07T12:10:00Z"
-    }
-  ],
-      "dependencies": ["004"],
-      "files_to_deploy": ["src/index.ts", "container/server.ts", "demo/worker.ts"],
-      "verification": "Deployment setup verified - requires ANTHROPIC_API_KEY or OPENAI_API_KEY in .env to deploy",
-      "completed_at": "2026-01-07T11:58:00Z",
-      "notes": "Can't deploy without AI API keys - this is expected behavior. Users must set their own keys before deployment."
     },
     {
-      "id": "007",
-      "title": "Publish to npm",
+      "id": "009",
+      "title": "Install ironalarm and create orchestrator DO foundation",
       "status": "pending",
       "priority": "P0",
-      "description": "Publish package to npm registry",
+      "description": "Set up ironalarm v0.2.0 (Effect-based) and create OrchestratorDO class with ReliableScheduler integration. **All ironalarm APIs return Effect<T, E, SchedulerService> - MUST use Effect.runPromise() or Effect.gen for execution.**",
       "acceptance_criteria": [
-        "Package published to npm",
-        "npm install ralphwiggums works",
-        "Fresh install examples work",
-        "Version is 0.0.1",
-        "README shows up on npmjs.com"
+        "ironalarm v0.2.0+ installed as dependency (bun add ironalarm)",
+        "src/orchestrator/orchestrator-do.ts created with OrchestratorDO class",
+        "ReliableScheduler initialized in constructor with state.storage",
+        "Browser automation handler registered: (taskId, params) => Effect.Effect<void, never, SchedulerService>",
+        "Handler uses Effect.gen and yields SchedulerService from context",
+        "alarm() method implemented: await Effect.runPromise(scheduler.alarm())",
+        "runNow() wrapped with Effect.runPromise() for async execution",
+        "OrchestratorDO extends DurableObject correctly",
+        "TypeScript compiles without errors",
+        "**NO raw promises, NO try/catch - Effect only, ironalarm APIs return Effect**"
       ],
-      "dependencies": ["006"],
-      "verification": "npm install ralphwiggums in new project, test run() API"
+      "dependencies": ["008"],
+      "new_files": ["src/orchestrator/orchestrator-do.ts", "src/orchestrator/types.ts"],
+      "files_to_modify": ["package.json", "alchemy.run.ts"],
+      "verification": "bun install succeeds, orchestrator-do.ts compiles, DO binding added to alchemy.run.ts, Effect.runPromise() used for all ironalarm calls, SchedulerService accessed via Effect context"
+    },
+    {
+      "id": "010",
+      "title": "Implement Effect-based browser pool management",
+      "status": "pending",
+      "priority": "P0",
+      "description": "Create browser pool with Effect-TS for concurrent health checks, availability tracking, and resource management. **MUST use Effect.all for concurrency, Effect.acquireUseRelease for resource management, Data.TaggedError for errors.**",
+      "acceptance_criteria": [
+        "src/orchestrator/pool.ts created with BrowserPool interface",
+        "createPool() uses Effect.all for concurrent browser instance creation",
+        "healthCheckPool() uses Effect.all for concurrent health checks",
+        "findAvailableBrowser() uses Effect to find healthy available browsers",
+        "markBrowserBusy/Available() functions implemented with Effect",
+        "Pool tracks browser status (available, busy, unhealthy)",
+        "Pool maintains max size limit (default 20)",
+        "All pool operations are Effect-based (no raw promises)",
+        "**NO Promise.all, NO try/catch, NO setTimeout** - Effect only"
+      ],
+      "dependencies": ["009"],
+      "new_files": ["src/orchestrator/pool.ts"],
+      "verification": "Pool functions compile, Effect.all used for concurrency, health checks run in parallel, NO raw promises found in code"
+    },
+    {
+      "id": "011",
+      "title": "Add session state persistence and promise tag detection",
+      "status": "pending",
+      "priority": "P0",
+      "description": "Implement checkpoint/resume with ironalarm (Effect-based) and detect completion promises (ralph-loop pattern). **MUST use SchedulerService from Effect context, all checkpoint operations return Effect.**",
+      "acceptance_criteria": [
+        "Session state saved via svc.checkpoint(taskId, key, value) - returns Effect",
+        "Session state loaded via svc.getCheckpoint(taskId, key) - returns Effect<unknown>",
+        "SchedulerService accessed via yield* SchedulerService in Effect.gen",
+        "Session state includes: iteration, prompt, completionPromise, checkpointId",
+        "Promise tag detection uses regex pattern: <promise>PROMISE_TEXT</promise>",
+        "Completion detection stops loop when promise tag found",
+        "Task resumes from checkpoint on eviction/recovery using Effect.gen",
+        "Max iterations enforced (default 10)",
+        "Session state persisted in DO storage via ironalarm checkpoints",
+        "**NO raw promises, NO try/catch - Effect only, use SchedulerService from context**"
+      ],
+      "dependencies": ["009", "010"],
+      "files_to_modify": ["src/orchestrator/orchestrator-do.ts"],
+      "new_files": ["src/orchestrator/session.ts"],
+      "verification": "Checkpoint saves/loads work via Effect, promise detection finds tags, task resumes after eviction, SchedulerService used from Effect context, all operations return Effect"
+    },
+    {
+      "id": "012",
+      "title": "Implement task-to-browser routing and dispatcher",
+      "status": "pending",
+      "priority": "P0",
+      "description": "Create dispatcher that routes tasks from ironalarm queue (Effect-based) to available browsers using Effect-based concurrency. **MUST use scheduler.getTasks() which returns Effect<Task[]>, Effect.all for parallel execution, Effect.acquireUseRelease for browser lifecycle.**",
+      "acceptance_criteria": [
+        "src/orchestrator/dispatcher.ts created with dispatchTasks() function",
+        "Dispatcher queries ironalarm: yield* scheduler.getTasks('queued') - returns Effect<Task[]>",
+        "Dispatcher uses Effect.gen to compose scheduler operations",
+        "Dispatcher finds available browsers from pool",
+        "Tasks dispatched up to available browser count (parallel execution)",
+        "Effect.all used for concurrent task execution",
+        "Dispatcher handles pool exhaustion (reschedules via scheduler.schedule() - returns Effect)",
+        "Task-to-browser assignment is fair (round-robin or least-busy)",
+        "Dispatcher loop runs continuously (Effect.forever or similar)",
+        "**NO Promise.all, NO try/catch - Effect only, scheduler.getTasks() returns Effect**"
+      ],
+      "dependencies": ["010", "011"],
+      "new_files": ["src/orchestrator/dispatcher.ts"],
+      "verification": "Dispatcher routes tasks to browsers, parallel execution works, pool exhaustion handled, Effect.all used for concurrency, scheduler.getTasks() wrapped with Effect.runPromise() or used in Effect.gen"
+    },
+    {
+      "id": "013",
+      "title": "Create HTTP API endpoints for orchestrator",
+      "status": "pending",
+      "priority": "P1",
+      "description": "Build REST API for queueing tasks, checking status, listing tasks, canceling, and pool management. **MUST use Effect.runPromise() for all ironalarm operations (runNow, getTask, getTasks, cancelTask all return Effect).**",
+      "acceptance_criteria": [
+        "src/orchestrator/handlers.ts created with Hono app",
+        "POST /orchestrator/queue - queue new task: await Effect.runPromise(scheduler.runNow(taskId, 'browser-automation', params, { priority }))",
+        "GET /orchestrator/tasks/:taskId - get task: await Effect.runPromise(scheduler.getTask(taskId))",
+        "GET /orchestrator/tasks - list tasks: await Effect.runPromise(scheduler.getTasks(status))",
+        "DELETE /orchestrator/tasks/:taskId - cancel: await Effect.runPromise(scheduler.cancelTask(taskId))",
+        "GET /orchestrator/pool - get pool status (size, available, busy)",
+        "POST /orchestrator/scale - scale pool size up/down",
+        "All endpoints return JSON responses",
+        "Error handling for invalid requests (ironalarm errors are tagged: HandlerMissing, TaskNotFound, etc.)",
+        "**NO raw promises, NO try/catch - Effect only, all ironalarm calls use Effect.runPromise()**"
+      ],
+      "dependencies": ["012"],
+      "new_files": ["src/orchestrator/handlers.ts"],
+      "files_to_modify": ["src/index.ts"],
+      "verification": "All endpoints respond correctly, curl tests pass, error handling works, Effect.runPromise() used for all ironalarm operations"
+    },
+    {
+      "id": "014",
+      "title": "Add WebSocket streaming for task events",
+      "status": "pending",
+      "priority": "P1",
+      "description": "Implement WebSocket/SSE streaming for real-time task status updates using Effect.Stream. **MUST use Effect.Stream for event emission.**",
+      "acceptance_criteria": [
+        "src/orchestrator/streaming.ts created with Effect.Stream",
+        "GET /orchestrator/tasks/:taskId/stream - SSE endpoint for task events",
+        "Task events include: queued, running, completed, failed, checkpoint",
+        "Stream uses Effect.Stream.async for event emission",
+        "Stream automatically closes on task completion/failure",
+        "Events formatted as Server-Sent Events (text/event-stream)",
+        "Client can subscribe to task progress in real-time",
+        "**NO raw promises, NO setTimeout - Effect.Stream only**"
+      ],
+      "dependencies": ["013"],
+      "new_files": ["src/orchestrator/streaming.ts"],
+      "files_to_modify": ["src/orchestrator/handlers.ts"],
+      "verification": "SSE stream works, events emitted on task updates, client receives real-time updates, Effect.Stream used"
+    },
+    {
+      "id": "015",
+      "title": "Implement auto-scaling logic for browser pool",
+      "status": "pending",
+      "priority": "P2",
+      "description": "Add intelligent pool scaling based on queue depth and browser utilization. **MUST use Effect for all async operations, Effect.sleep for delays.**",
+      "acceptance_criteria": [
+        "Auto-scaling monitors queue depth and pool utilization",
+        "Scale up when: queue depth > available browsers * 2",
+        "Scale down when: queue depth = 0 and utilization < 50% for 5 minutes",
+        "Scaling respects min/max pool size limits",
+        "Scale operations use Effect for resource management",
+        "Scaling decisions logged for observability",
+        "Manual scaling via API still works (POST /orchestrator/scale)",
+        "**NO setTimeout, NO raw promises - Effect only**"
+      ],
+      "dependencies": ["012", "013"],
+      "files_to_modify": ["src/orchestrator/pool.ts", "src/orchestrator/dispatcher.ts"],
+      "verification": "Pool scales up when queue is full, scales down when idle, respects limits, Effect.sleep used for delays"
     }
   ],
-  "completed": ["001", "002", "003", "004", "005", "006"],
-  "next_story_id": "007"
+  "completed": ["001", "002", "003", "004", "005", "006", "007", "008"],
+  "next_story_id": "009"
 }

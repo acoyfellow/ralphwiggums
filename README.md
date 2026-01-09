@@ -1,6 +1,6 @@
 # ralphwiggums
 
-**Effect-first browser automation on Cloudflare Workers.** Give it a prompt, get a completed task.
+**Effect-first browser automation.** Give it a prompt, get a completed task.
 
 Built with [Effect-TS](https://effect.website) for typed error handling and functional composition. Uses [Stagehand](https://docs.stagehand.dev/v3) for AI-powered browser automation.
 
@@ -40,9 +40,33 @@ ralphwiggums uses a **two-terminal setup** for local development:
 - **Container Server** (port 8081): Runs Stagehand for browser automation
 - **Worker**: API endpoints that call the container
 
-**Why two terminals?** Cloudflare Workers can't run browsers directly. The browser runs in a separate container, and the worker communicates with it via HTTP.
+**Why two terminals?** Browser automation requires headless Chrome. The worker can't run browsers directly, so they communicate via HTTP.
 
-In production, the container runs in Cloudflare Containers, and the worker uses Container bindings to communicate.
+## AI Provider
+
+ralphwiggums requires an **AI Provider** for browser automation:
+
+| Provider | Model | Cost | Setup |
+|----------|-------|------|-------|
+| OpenCode Zen | `claude-3-5-sonnet-latest` | Pay-as-you-go | Requires Anthropic API key |
+
+### OpenCode Zen
+
+Uses Anthropic's API directly. Better reliability for automation tasks.
+
+**Required environment variables:**
+```bash
+AI_PROVIDER=zen
+ANTHROPIC_API_KEY=sk-ant-your_api_key_here
+```
+
+**IMPORTANT:** Get your API key from https://console.anthropic.com/
+- Key must start with `sk-ant-` (Anthropic format)
+
+**Optional model override:**
+```bash
+ZEN_MODEL=claude-3-5-sonnet-latest
+```
 
 ## Response
 
@@ -103,10 +127,9 @@ npm install ralphwiggums
 ## Prerequisites
 
 - **Node.js 18+** required
-- **AI API Key** required for browser automation:
-  - `ANTHROPIC_API_KEY` (recommended) or
-  - `OPENAI_API_KEY` (alternative)
-  - Stagehand uses these keys to control the browser
+- **AI Provider** required for browser automation:
+  - **OpenCode Zen** - Requires `ZEN_API_KEY`
+  - Model: `claude-3-5-sonnet-latest`
 - See `.env.example` for all environment variables
 
 ## Quick Start
@@ -118,8 +141,11 @@ npm install ralphwiggums
 
 2. **Set up environment variables:**
    ```bash
-   # Copy .env.example to .env and add your AI API key
-   ANTHROPIC_API_KEY=your_key_here
+   # Copy .env.example to .env
+   cp .env.example .env
+
+   # Edit .env and set your ZEN_API_KEY
+   # ZEN_API_KEY=your_zen_api_key
    ```
 
 3. **Run your first automation:**
@@ -132,7 +158,7 @@ npm install ralphwiggums
 
 ## Local Development
 
-ralphwiggums requires a **two-terminal setup** for local development because Cloudflare Workers can't run browsers directly.
+ralphwiggums requires a **two-terminal setup** for local development.
 
 ### Setup
 
@@ -180,25 +206,9 @@ Stop with `Ctrl+C` (stops both terminals).
 |-------|-----|
 | "Container binding not set" | Container server isn't running. Start Terminal 1. |
 | ECONNREFUSED on port 8081 | Port in use. Kill existing: `lsof -ti:8081 | xargs kill` |
-| Browser won't start | Check `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` is set in `.env` |
+| Browser won't start | Check `ZEN_API_KEY` is set in `.env` |
 
 ## Usage
-
-### `run()` vs `doThis()`
-
-- **`run()`: Promise-based API (recommended for most use cases)**
-  ```typescript
-  const result = await run("Go to example.com and get title");
-  ```
-
-- **`doThis()`: Effect-based API (for advanced use cases with Effect composition)**
-  ```typescript
-  import { doThis } from "ralphwiggums";
-  import { Effect } from "effect";
-  
-  const program = doThis("Go to example.com");
-  const result = await Effect.runPromise(program);
-  ```
 
 ### Direct API
 
@@ -232,8 +242,6 @@ const result = await run("Long running task", {
 
 ### Worker Integration
 
-**Production (Cloudflare Workers with Container binding):**
-
 ```typescript
 import { createHandlers, setContainerBinding } from "ralphwiggums";
 
@@ -247,11 +255,7 @@ export class RalphAgent extends DurableObject {
 }
 ```
 
-**Local Development:**
-
-The worker automatically falls back to `http://localhost:8081` when no Container binding is available. No configuration needed.
-
-## Advanced: Checkpoints
+### Advanced: Checkpoints
 
 Tasks return a `checkpointId` that you can use to resume interrupted tasks:
 
@@ -301,16 +305,14 @@ RALPH_MAX_CONCURRENT=10  # Allow 10 concurrent requests
 
 ### Prerequisites
 
-- Cloudflare account
-- AI API keys (`ANTHROPIC_API_KEY` or `OPENAI_API_KEY`)
+- OpenCode Zen API key (`ZEN_API_KEY`)
 - Alchemy CLI installed (for infrastructure management)
 
 ### Steps
 
 1. **Set environment variables:**
    ```bash
-   export ANTHROPIC_API_KEY=your_key
-   export RALPH_API_KEY=your_api_key  # Optional
+   export ZEN_API_KEY=your_api_key
    ```
 
 2. **Deploy:**
@@ -330,34 +332,14 @@ The deployment uses Alchemy to manage:
 
 See `alchemy.run.ts` for infrastructure configuration.
 
-## Troubleshooting
+### Troubleshooting
 
-### "Container binding not set"
-
-**Local dev:**
-- Container server isn't running. Start Terminal 1 with `./dev.sh` or manually.
-
-**Production:**
-- Verify Container binding is configured in `alchemy.run.ts`
-- Check Container is deployed and healthy
-
-### Browser crashes or timeouts
-
-- Verify AI API key is valid: `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`
-- Increase `timeout` option for slow pages
-- Check network connectivity
-
-### Rate limit errors
-
-- Default: 60 requests/minute per IP
-- Wait for `retryAfter` seconds before retrying
-- Consider implementing exponential backoff
-
-### Port conflicts
-
-- Container server uses port 8081 by default
-- Change with: `PORT=8082 bun run container/server.ts`
-- Update `CONTAINER_URL` accordingly
+| Error | Fix |
+|-------|-----|
+| "Container binding not set" | Verify Container binding is configured in `alchemy.run.ts` |
+| Browser crashes or timeouts | Verify ZEN_API_KEY is valid: `ZEN_API_KEY` |
+| Rate limit errors | Default: 60 requests/minute per IP. Wait for `retryAfter` seconds before retrying. |
+| Port conflicts | Container server uses port 8081 by default. Change with: `PORT=8082 bun run container/server.ts` |
 
 ## Package Exports
 
@@ -373,7 +355,7 @@ ralphwiggums provides two exports:
    import { CheckpointDO } from "ralphwiggums/checkpoint-do";
    ```
    
-   Use `checkpoint-do` when deploying with Cloudflare Durable Objects for persistent checkpoint storage across multiple worker instances.
+   Use `checkpoint-do` when deploying with Durable Objects for persistent checkpoint storage across multiple worker instances.
 
 ## Documentation
 
@@ -381,10 +363,6 @@ ralphwiggums provides two exports:
 - **Stagehand** ([docs](https://docs.stagehand.dev/v3), [GitHub](https://github.com/browserbase/stagehand)) - AI-powered browser automation
 - **Effect** ([docs](https://effect.website), [GitHub](https://github.com/effect-ts/effect)) - Functional programming library
 - **Hono** ([docs](https://hono.dev), [GitHub](https://github.com/honojs/hono)) - Lightweight web framework
-
-### Cloudflare
-- **Workers** ([docs](https://developers.cloudflare.com/workers)) - Serverless compute
-- **Containers** ([docs](https://developers.cloudflare.com/containers)) - Browser automation in containers
 
 ### Reference Implementations
 - **AgentCast** ([GitHub](https://github.com/acoyfellow/agentcast)) - Container-based browser automation pattern

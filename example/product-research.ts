@@ -92,7 +92,7 @@ export async function findCheapestPrice(productName: string, retailers: string[]
   });
 
   const sites = retailers.map(r => `${r}/search?q=${encodeURIComponent(productName)}`).join("\n");
-  
+
   const result = await run(`Find the cheapest price for "${productName}" across these sites:
 ${sites}
 

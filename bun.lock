@@ -9,6 +9,7 @@
         "alchemy": "^0.83.0",
         "effect": "^3.19.14",
         "hono": "^4.11.3",
+        "ironalarm": "^0.1.0",
       },
       "devDependencies": {
         "@browserbasehq/stagehand": "^3.0.7",
@@ -891,6 +892,8 @@
     "ip-address": ["ip-address@10.1.0", "", {}, "sha512-XXADHxXmvT9+CRxhXg56LJovE+bmWnEWB78LB83VZTprKTmaC5QfruXocxzTZ2Kl0DNwKuBdlIhjL8LeY8Sf8Q=="],
 
     "ipaddr.js": ["ipaddr.js@1.9.1", "", {}, "sha512-0KI/607xoxSToH7GjN1FfSbLoU0+btTicjsQSWQlh/hZykN8KpmMf7uYwPW3R+akZ6R/w18ZlXSHBYXiYUPO3g=="],
+
+    "ironalarm": ["ironalarm@0.1.0", "", { "peerDependencies": { "effect": "^3.19.14", "typescript": "^5" } }, "sha512-W74gj6GOenACtsSrmy1FJqulYEhraWTWYYTR45pcJ58hHqddVNCrRzUPZ/pD+gOjE/wz4kyND/XaeI9RRhoS0Q=="],
 
     "is-arrayish": ["is-arrayish@0.3.4", "", {}, "sha512-m6UrgzFVUYawGBh1dUsWR5M2Clqic9RVXC/9f8ceNlv2IcO9j9J/z8UoCLPqtsPBFNzEpfR3xftohbfqDx8EQA=="],
 

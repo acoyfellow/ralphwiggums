@@ -23,7 +23,7 @@ export async function fillContactForm(url: string, data: { name: string; email: 
     maxIterations: 5,
     timeout: 60000,
   });
-  
+
   return result;
 }
 
@@ -32,10 +32,10 @@ export async function fillContactForm(url: string, data: { name: string; email: 
 // ============================================================================
 
 export async function completeMultiStepForm(url: string, formData: Record<string, string>) {
-  const steps = Object.entries(formData).map(([field, value]) => 
+  const steps = Object.entries(formData).map(([field, value]) =>
     `Enter "${value}" in the ${field} field`
   ).join("\n");
-  
+
   const result = await run(`Complete the multi-step form at ${url}:
     ${steps}
     - Proceed through each step
@@ -43,7 +43,7 @@ export async function completeMultiStepForm(url: string, formData: Record<string
     maxIterations: 10,
     timeout: 120000,
   });
-  
+
   return result;
 }
 
@@ -52,15 +52,15 @@ export async function completeMultiStepForm(url: string, formData: Record<string
 // ============================================================================
 
 export async function fillFormWithProgress(url: string, data: Record<string, string>) {
-  const instructions = Object.entries(data).map(([field, value]) => 
+  const instructions = Object.entries(data).map(([field, value]) =>
     `Fill the ${field} with "${value}"`
   ).join(". ");
-  
+
   const result = await run(`${instructions}. Submit the form and wait for confirmation.`, {
     maxIterations: 8,
     timeout: 90000,
   });
-  
+
   return result;
 }
 
@@ -72,7 +72,7 @@ async function main() {
   console.log("RalphWiggums Example: Contact Form Automation\n");
   console.log("This example demonstrates how to automate form filling.");
   console.log("Note: Requires Cloudflare Workers with Container binding.\n");
-  
+
   console.log("To run this example:");
   console.log("1. Deploy ralphwiggums to Cloudflare Workers");
   console.log("2. Set up a Container binding");

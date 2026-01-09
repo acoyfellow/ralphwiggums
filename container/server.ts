@@ -1,7 +1,7 @@
 /**
  * ralphwiggums Container Server
  * HTTP server for browser automation inside Cloudflare Containers.
- * 
+ *
  * API Reference: https://docs.stagehand.dev/v3
  */
 
@@ -34,6 +34,12 @@ export interface DoRequest {
 }
 
 // ============================================================================
+// AI Provider Configuration
+// ============================================================================
+
+type AIProvider = "groq" | "zen";
+
+// ============================================================================
 // Event Types for WebSocket Streaming
 // ============================================================================
 
@@ -53,23 +59,46 @@ export type RalphEvent =
 
 let browser: Stagehand | null = null;
 let browserFactory: () => Stagehand = () => {
-  const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
-  const openaiApiKey = process.env.OPENAI_API_KEY;
-  
-  const modelConfig = anthropicApiKey
-    ? { modelName: "anthropic/claude-sonnet-4-5", apiKey: anthropicApiKey }
-    : openaiApiKey
-      ? { modelName: "openai/gpt-4o", apiKey: openaiApiKey }
-      : undefined;
+  const provider = (process.env.AI_PROVIDER?.toLowerCase() as AIProvider) || "groq";
 
-  return new Stagehand({
-    env: "LOCAL",
-    model: modelConfig,
-    localBrowserLaunchOptions: {
-      headless: true,
-      viewport: { width: 1280, height: 720 },
-    },
-  });
+  switch (provider) {
+    case "groq": {
+      const apiKey = process.env.GROQ_API_KEY;
+      if (!apiKey) {
+        throw new Error("GROQ_API_KEY required when AI_PROVIDER=groq. Get one from https://console.groq.com/keys (free tier available)");
+      }
+      return new Stagehand({
+        env: "LOCAL",
+        model: process.env.GROQ_MODEL || "groq-llama-3.3-70b-versatile",
+        localBrowserLaunchOptions: {
+          headless: true,
+          viewport: { width: 1280, height: 720 },
+        },
+      } as any);
+    }
+
+    case "zen":
+    default: {
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      if (!apiKey) {
+        throw new Error("ANTHROPIC_API_KEY required when AI_PROVIDER=zen. " +
+          "OpenCode Zen uses Anthropic's API. Get your key from https://console.anthropic.com/ (must start with 'sk-ant-').");
+      }
+      // Verify it's an Anthropic-style key
+      if (!apiKey.startsWith("sk-ant-")) {
+        throw new Error("Invalid API key format. Anthropic keys must start with 'sk-ant-'. " +
+          "Get a key from https://console.anthropic.com/");
+      }
+      return new Stagehand({
+        env: "LOCAL",
+        model: process.env.ZEN_MODEL || "claude-3-5-sonnet-latest",
+        localBrowserLaunchOptions: {
+          headless: true,
+          viewport: { width: 1280, height: 720 },
+        },
+      } as any);
+    }
+  }
 };
 
 export function setBrowserFactory(factory: () => Stagehand): void {

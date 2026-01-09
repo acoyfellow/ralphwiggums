@@ -1,6 +1,6 @@
 /**
  * ralphwiggums - Core
- * Effect-first browser automation on Cloudflare Workers.
+ * Effect-first browser automation with OpenCode Zen.
  * Production-ready with secure-by-default configuration.
  */
 

@@ -1,6 +1,6 @@
 # ralphwiggums
 
-**Effect-first browser automation orchestrator on Cloudflare Workers.** Queue multiple tasks, manage a pool of browsers, get results.
+**Effect-first browser automation orchestrator with OpenCode Zen.** Queue multiple tasks, manage a pool of browsers, get results.
 
 ## Quick Start
 

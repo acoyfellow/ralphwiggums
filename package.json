@@ -1,7 +1,7 @@
 {
   "name": "ralphwiggums",
   "version": "0.0.1",
-  "description": "Ralph Wiggum agent for web automation - Effect-first browser automation on Cloudflare Workers",
+  "description": "Ralph Wiggum agent for web automation - Effect-first browser automation with OpenCode Zen",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -61,7 +61,8 @@
     "@types/node": "^25.0.3",
     "alchemy": "^0.83.0",
     "effect": "^3.19.14",
-    "hono": "^4.11.3"
+    "hono": "^4.11.3",
+    "ironalarm": "^0.1.0"
   },
   "devDependencies": {
     "@browserbasehq/stagehand": "^3.0.7",

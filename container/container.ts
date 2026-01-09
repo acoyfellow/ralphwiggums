@@ -10,8 +10,17 @@ export class RalphContainer extends Container {
   defaultPort = 8081;
 
   envVars = {
-    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ?? "",
-    OPENAI_API_KEY: process.env.OPENAI_API_KEY ?? "",
+    // AI Provider selection (cloudflare or zen)
+    AI_PROVIDER: process.env.AI_PROVIDER ?? "cloudflare",
+
+    // Cloudflare AI credentials
+    CLOUDFLARE_ACCOUNT_ID: process.env.CLOUDFLARE_ACCOUNT_ID ?? "",
+    CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN ?? "",
+    CLOUDFLARE_MODEL: process.env.CLOUDFLARE_MODEL ?? "",
+
+    // OpenCode Zen credentials
+    ZEN_API_KEY: process.env.ZEN_API_KEY ?? "",
+    ZEN_MODEL: process.env.ZEN_MODEL ?? "",
   };
 
   async onRequest(request: Request): Promise<Response> {

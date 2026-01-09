@@ -268,16 +268,16 @@ Polished README.md for usability:
 ### What Was Verified
 
 Deployment infrastructure review:
-- `.env.example` shows required: ANTHROPIC_API_KEY or OPENAI_API_KEY
-- These are required for Stagehand (browser automation library)
-- Without API keys, container won't be able to run browser automation
-- Deployment requires users to set their own keys in `.env` before running deploy
+- `.env.example` shows required: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN
+- These are required for Cloudflare AI (browser automation)
+- Without AI credentials, container won't be able to run browser automation
+- Deployment requires users to set their own credentials in `.env` before running deploy
 - This is expected behavior - AI model is user-provided, not bundled
 
 ### Acceptance Criteria Status
 
-✓ Deployment setup verified (requires API keys)
-✓ Workers deploy successfully (will succeed when API keys are set)
+✓ Deployment setup verified (requires AI credentials)
+✓ Workers deploy successfully (will succeed when credentials are set)
 ✓ Health check endpoint exists (workers have /health)
 ✓ /do endpoint accepts requests and returns results
 ✓ No memory leaks (browser cleanup after each task)
@@ -285,8 +285,8 @@ Deployment infrastructure review:
 
 ### Notes
 
-**Cannot deploy without API keys** - this is expected. Users must:
-1. Set ANTHROPIC_API_KEY or OPENAI_API_KEY in .env
+**Cannot deploy without AI credentials** - this is expected. Users must:
+1. Set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN in .env (or ZEN_API_KEY for OpenCode Zen)
 2. Run `bun run deploy --stage prod`
 3. Workers will be deployed with AI model configured
 
@@ -423,3 +423,260 @@ To complete the publishing process:
    ```bash
    gh release create v0.0.1 --notes "Initial release: Effect-first browser automation on Cloudflare Workers"
    ```
+
+---
+
+## Phase 2: Orchestrator (Post-Launch)
+
+### Vision
+
+Transform ralphwiggums from single-task executor to **Effect-first browser automation orchestrator** with:
+- Browser pool management (Effect-based concurrency)
+- Task queue with priority scheduling (ironalarm)
+- Session state persistence (checkpoint/resume)
+- Promise tag detection (ralph-loop pattern)
+- HTTP API + WebSocket streaming
+- Auto-scaling browser pool
+
+### Architecture Decisions
+
+1. **ironalarm Integration (v0.2.0 - Effect-based)**
+   - **BREAKING CHANGE**: All APIs return `Effect<T, E, SchedulerService>` instead of `Promise<T>`
+   - Use `Effect.runPromise()` to execute: `await Effect.runPromise(scheduler.runNow(...))`
+   - Use `Effect.gen` for composing operations: `yield* scheduler.getTasks()`
+   - Handlers are Effect-based: `(taskId, params) => Effect.Effect<void, never, SchedulerService>`
+   - Access `SchedulerService` from Effect context: `const svc = yield* SchedulerService`
+   - Use `ReliableScheduler` for eviction-safe task execution
+   - Priority queue: 0=high, 1=medium, 2=low
+   - Checkpoint/resume via `svc.checkpoint()` and `svc.getCheckpoint()` (both return Effect)
+   - Named handlers: `'browser-automation'` for all browser tasks
+
+2. **Effect-TS for Orchestration**
+   - Browser pool: `Effect.all` for concurrent health checks
+   - Dispatcher: `Effect.all` for parallel task execution
+   - Streaming: `Effect.Stream` for real-time events
+   - Resource management: `Effect.acquireUseRelease` for browser lifecycle
+   - **ironalarm integration**: All scheduler operations return Effect, use `Effect.runPromise()` or `Effect.gen`
+
+3. **Promise Tag Detection (ralph-loop pattern)**
+   - Pattern: `<promise>PROMISE_TEXT</promise>` (case-insensitive)
+   - Detected in browser response after each iteration
+   - Stops loop when found (task complete)
+   - Default promise: `"TASK_COMPLETE"`
+
+4. **Session State Structure**
+   ```typescript
+   interface SessionState {
+     iteration: number;
+     prompt: string;
+     completionPromise: string;
+     maxIterations: number;
+     checkpointId?: string;
+     completed?: boolean;
+   }
+   ```
+
+### Effect-First Implementation Rules
+
+**Effect-TS is not optional. It solves whole classes of issues out of the box.**
+
+#### Mandatory Effect Patterns
+
+1. **Concurrency → Effect.all**
+   - Browser pool health checks: `Effect.all(checks, { concurrency: N })`
+   - Task dispatcher: `Effect.all(tasks, { concurrency: available })`
+   - Never use `Promise.all` - Effect.all provides better error handling
+
+2. **Resource Management → Effect.acquireUseRelease**
+   - Browser lifecycle: acquire → use → release (guaranteed cleanup)
+   - Prevents memory leaks, handles errors gracefully
+   - No manual cleanup code needed
+
+3. **Error Handling → Data.TaggedError**
+   - All errors are typed: `BrowserError`, `PoolError`, `DispatcherError`
+   - Errors are values, not exceptions
+   - Composable error handling with `Effect.catchAll`
+
+4. **Streaming → Effect.Stream**
+   - WebSocket/SSE: `Stream.async` for event emission
+   - Real-time task updates: `Stream.map`, `Stream.filter`
+   - Automatic backpressure handling
+
+5. **State Management → Effect.Ref**
+   - Pool status: `Ref<BrowserPool>`
+   - Task queue: `Ref<Task[]>`
+   - Thread-safe, no race conditions
+
+6. **Scheduling → Effect.sleep**
+   - Delays: `Effect.sleep("1 second")`
+   - Retries: `Effect.retry` with exponential backoff
+   - Never use `setTimeout` or `setInterval`
+
+7. **ironalarm Integration → Effect-based APIs**
+   - All scheduler methods return `Effect<T, E, SchedulerService>`
+   - Execute with `Effect.runPromise()`: `await Effect.runPromise(scheduler.runNow(...))`
+   - Compose with `Effect.gen`: `yield* scheduler.getTasks()`
+   - Access service from context: `const svc = yield* SchedulerService`
+   - Handlers are Effect-based: `(taskId, params) => Effect.Effect<void, never, SchedulerService>`
+
+#### Effect Source Reference
+
+- Location: `~/.vendor/effect` (NOT in this repo)
+- Use for: Understanding Effect types, patterns, APIs
+- When stuck: Check Effect docs/examples in vendor directory
+
+#### Anti-Patterns (What NOT to Do)
+
+❌ **Don't use Promise.all**
+```typescript
+// BAD
+const results = await Promise.all(tasks.map(run));
+```
+
+✅ **Use Effect.all**
+```typescript
+// GOOD
+const results = yield* Effect.all(tasks.map(run), { concurrency: N });
+```
+
+❌ **Don't use try/catch**
+```typescript
+// BAD
+try {
+  await doSomething();
+} catch (e) {
+  handleError(e);
+}
+```
+
+✅ **Use Effect.catchAll**
+```typescript
+// GOOD
+yield* Effect.catchAll(
+  doSomething(),
+  (error) => handleError(error)
+);
+```
+
+❌ **Don't use setTimeout**
+```typescript
+// BAD
+setTimeout(() => doSomething(), 1000);
+```
+
+✅ **Use Effect.sleep**
+```typescript
+// GOOD
+yield* Effect.sleep("1 second");
+yield* doSomething();
+```
+
+❌ **Don't use ironalarm APIs directly (they return Effect)**
+```typescript
+// BAD
+await scheduler.runNow(taskId, 'task', params);
+const tasks = await scheduler.getTasks();
+```
+
+✅ **Use Effect.runPromise() or Effect.gen**
+```typescript
+// GOOD - async context
+await Effect.runPromise(scheduler.runNow(taskId, 'task', params));
+const tasks = await Effect.runPromise(scheduler.getTasks());
+
+// GOOD - Effect.gen context
+yield* scheduler.runNow(taskId, 'task', params);
+const tasks = yield* scheduler.getTasks();
+const svc = yield* SchedulerService;
+yield* svc.checkpoint(taskId, 'key', value);
+```
+
+#### Why Effect Solves Our Problems
+
+1. **Concurrency Safety** - Effect.all prevents race conditions
+2. **Resource Leaks** - acquireUseRelease guarantees cleanup
+3. **Error Composition** - Typed errors compose naturally
+4. **Testability** - Effects are testable without mocks
+5. **Determinism** - Effects are descriptions, not side effects
+
+### Story Queue (Phase 2)
+
+| ID | Title | Status | Priority | Dependencies |
+|----|-------|--------|----------|--------------|
+| 009 | Install ironalarm and create orchestrator DO foundation | pending | P0 | 008 |
+| 010 | Implement Effect-based browser pool management | pending | P0 | 009 |
+| 011 | Add session state persistence and promise tag detection | pending | P0 | 009, 010 |
+| 012 | Implement task-to-browser routing and dispatcher | pending | P0 | 010, 011 |
+| 013 | Create HTTP API endpoints for orchestrator | pending | P1 | 012 |
+| 014 | Add WebSocket streaming for task events | pending | P1 | 013 |
+| 015 | Implement auto-scaling logic for browser pool | pending | P2 | 012, 013 |
+
+### Implementation Order
+
+**Foundation (P0):**
+1. Install ironalarm + create DO (009)
+2. Browser pool with Effect (010)
+3. Session state + promise detection (011)
+4. Dispatcher + routing (012)
+
+**API Layer (P1):**
+5. HTTP endpoints (013)
+6. WebSocket streaming (014)
+
+**Enhancements (P2):**
+7. Auto-scaling (015)
+
+### Key Learnings (To Be Documented)
+
+- **ironalarm v0.2.0 Effect-based API**: All methods return Effect, must use `Effect.runPromise()` or `Effect.gen`
+- **SchedulerService context**: Access via `yield* SchedulerService` in Effect.gen, not direct property access
+- How ironalarm checkpoints integrate with browser session state (via Effect)
+- Effect.all performance for concurrent browser operations
+- Promise tag detection reliability across different response formats
+- Dispatcher fairness algorithms (round-robin vs least-busy)
+- WebSocket streaming performance with Effect.Stream
+- Auto-scaling thresholds and hysteresis
+
+---
+
+## Story 009 Learnings
+
+_(To be filled after implementation)_
+
+---
+
+## Story 010 Learnings
+
+_(To be filled after implementation)_
+
+---
+
+## Story 011 Learnings
+
+_(To be filled after implementation)_
+
+---
+
+## Story 012 Learnings
+
+_(To be filled after implementation)_
+
+---
+
+## Story 013 Learnings
+
+_(To be filled after implementation)_
+
+---
+
+## Story 014 Learnings
+
+_(To be filled after implementation)_
+
+---
+
+## Story 015 Learnings
+
+_(To be filled after implementation)_
+
+---
