@@ -26,8 +26,9 @@ const app = await alchemy("ralphwiggums", {
   password: process.env.ALCHEMY_PASSWORD || "abc123",
   stateStore: !process.env.CI ? undefined : (scope) => new CloudflareStateStore(scope, {
     scriptName: `ralphwiggums-state-store`,
+    forceUpdate: true,
     stateToken: alchemy.secret(process.env.ALCHEMY_STATE_TOKEN || ""),
-  })
+  }),
 });
 
 // Container for browser automation
