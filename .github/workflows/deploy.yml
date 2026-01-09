@@ -35,13 +35,13 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@v4
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-      - name: Install dependencies
-        run: bun install
+       - uses: actions/checkout@v4
+       - name: Setup Bun
+         uses: oven-sh/setup-bun@v2
+         with:
+           bun-version: latest
+       - name: Install dependencies
+         run: bun install
        - name: Deploy
          run: bun alchemy deploy --stage ${{ env.STAGE }}
          env:
