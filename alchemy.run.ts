@@ -22,13 +22,15 @@ import { SvelteKit, Worker, Container } from "alchemy/cloudflare";
 
 import { CloudflareStateStore } from "alchemy/state";
 
+const dev = process.env.STAGE !== "prod" || !process.env.CI;
+
 const app = await alchemy("ralphwiggums", {
   password: process.env.ALCHEMY_PASSWORD || "abc123",
-  stateStore: process.env.ALCHEMY_DISABLE_STATE_STORE === 'true' ? undefined : (!process.env.CI ? undefined : (scope) => new CloudflareStateStore(scope, {
+  stateStore: dev ? undefined : (scope) => new CloudflareStateStore(scope, {
     scriptName: `ralphwiggums-state-store`,
     stateToken: alchemy.secret(process.env.ALCHEMY_STATE_TOKEN || ""),
     forceUpdate: true,
-  })),
+  }),
 });
 
 // Container for browser automation
@@ -41,6 +43,10 @@ const browserContainer = await Container("ralph-container", {
     context: import.meta.dirname,
     dockerfile: "Dockerfile",
     platform: "linux/amd64",
+  },
+  env: {
+    AI_PROVIDER: "zen",
+    ANTHROPIC_API_KEY: alchemy.secret(process.env.ZEN_API_KEY || ""),
   },
 });
 
