@@ -349,8 +349,30 @@
         "CLOUDFLARE_API_TOKEN is invalid/expired (verification returned false)",
         "Container registry authentication requires CLOUDFLARE_API_TOKEN with 'Account:Containers:Edit' permission"
       ]
+    },
+    {
+      "id": "017",
+      "title": "Fix deployment Durable Object conflicts",
+      "status": "pending",
+      "priority": "P0",
+      "description": "Fix DURABLE_OBJECT_ALREADY_HAS_APPLICATION error during deployment. Container creates successfully but Worker fails due to existing Durable Object. Need proper cleanup or adopt configuration.",
+      "acceptance_criteria": [
+        "bun alchemy deploy --stage prod succeeds without Durable Object conflicts",
+        "Container and Worker deploy together successfully",
+        "No manual destroy steps required for redeployment",
+        "Production environment deploys reliably"
+      ],
+      "dependencies": ["016"],
+      "files_to_modify": ["alchemy.run.ts"],
+      "verification": "Multiple deployment attempts succeed without conflicts, production endpoints work",
+      "known_issues": [
+        "DURABLE_OBJECT_ALREADY_HAS_APPLICATION for ralphwiggums-ralph-container-prod",
+        "Container creates but Worker binding fails due to existing DO",
+        "adopt: true may not be working properly for container bindings",
+        "Manual destroy works but not ideal for CI/CD"
+      ]
     }
   ],
   "completed": ["001", "002", "003", "004", "005", "006", "007", "008", "009", "009.1"],
-  "next_story_id": "017"
+  "next_story_id": "018"
 }
