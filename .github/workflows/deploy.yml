@@ -25,7 +25,7 @@ jobs:
       - name: Install dependencies
         run: bun install
       - name: Run tests
-        run: bun test
+        run: bun test src/__tests__/
 
   deploy:
     needs: test

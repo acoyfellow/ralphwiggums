@@ -38,3 +38,8 @@ logs/
 
 # Dev vars (local dev config)
 .dev.vars
+
+# Test files in dist (should not be committed)
+dist/**/*.test.js
+dist/**/*.test.d.ts
+dist/**/__tests__/

@@ -44,7 +44,7 @@
   "homepage": "https://github.com/acoyfellow/ralphwiggums#readme",
   "scripts": {
     "build": "vite build && tsc --outDir dist --declaration",
-    "test": "bun test",
+    "test": "bun test src/__tests__/",
     "watch": "tsc --watch",
     "clean_docker": "",
     "dev": " lsof -ti:5153 | xargs kill -9 && alchemy dev",

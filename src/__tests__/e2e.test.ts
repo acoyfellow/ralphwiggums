@@ -8,14 +8,11 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { run } from "../index.js";
 
+const hasContainer = !!process.env.CONTAINER_URL;
+
+if (hasContainer) {
 describe("E2E - Real Browser Automation", () => {
   it("should navigate to example.com and extract title", { timeout: 30000 }, async () => {
-    console.log("CONTAINER_URL value:", JSON.stringify(process.env.CONTAINER_URL));
-    if (!process.env.CONTAINER_URL) {
-      console.log("Skipping E2E test: CONTAINER_URL not set");
-      expect(true).toBe(true); // Pass the test when skipping
-      return;
-    }
 
     const result = await run("Go to https://example.com and get the page title", {
       maxIterations: 3,
@@ -31,11 +28,6 @@ describe("E2E - Real Browser Automation", () => {
   });
 
   it("should navigate and extract visible text from example.com", { timeout: 30000 }, async () => {
-    if (!process.env.CONTAINER_URL) {
-      console.log("Skipping E2E test: CONTAINER_URL not set");
-      expect(true).toBe(true); // Pass the test when skipping
-      return;
-    }
 
     const result = await run(
       "Extract from https://example.com: all visible text on the page",
@@ -50,11 +42,6 @@ describe("E2E - Real Browser Automation", () => {
   });
 
   it("should handle action tasks (navigate + description)", { timeout: 30000 }, async () => {
-    if (!process.env.CONTAINER_URL) {
-      console.log("Skipping E2E test: CONTAINER_URL not set");
-      expect(true).toBe(true); // Pass the test when skipping
-      return;
-    }
 
     const result = await run(
       "Go to https://example.com, find any link and describe it",
@@ -66,11 +53,6 @@ describe("E2E - Real Browser Automation", () => {
   });
 
   it("should handle timeout gracefully", { timeout: 35000 }, async () => {
-    if (!process.env.CONTAINER_URL) {
-      console.log("Skipping E2E test: CONTAINER_URL not set");
-      expect(true).toBe(true); // Pass the test when skipping
-      return;
-    }
 
     const result = await run(
       "Go to https://example.com and wait for something that will never appear",
@@ -84,11 +66,6 @@ describe("E2E - Real Browser Automation", () => {
   });
 
   it("should handle max iterations gracefully", { timeout: 60000 }, async () => {
-    if (!process.env.CONTAINER_URL) {
-      console.log("Skipping E2E test: CONTAINER_URL not set");
-      expect(true).toBe(true); // Pass the test when skipping
-      return;
-    }
 
     const result = await run(
       "Extract a number that will randomly change on every page load from https://example.com",
@@ -109,38 +86,29 @@ describe("E2E - Real Browser Automation", () => {
   });
 });
 
-describe("E2E - Real Form Interaction", () => {
-  it("should navigate to a contact form page and extract form fields", { timeout: 30000 }, async () => {
-    if (!process.env.CONTAINER_URL) {
-      console.log("Skipping E2E test: CONTAINER_URL not set");
-      expect(true).toBe(true); // Pass the test when skipping
-      return;
-    }
+  describe("E2E - Real Form Interaction", () => {
+    it("should navigate to a contact form page and extract form fields", { timeout: 30000 }, async () => {
 
-    const result = await run(
-      "Go to https://example.com/contact and list all form fields on the page",
-      { maxIterations: 3 }
-    );
+      const result = await run(
+        "Go to https://example.com/contact and list all form fields on the page",
+        { maxIterations: 3 }
+      );
 
-    expect(result.success).toBe(true);
-    expect(result.data).toBeTruthy();
-    if (result.data) {
-      expect(String(result.data).length).toBeGreaterThan(0);
-    }
+      expect(result.success).toBe(true);
+      expect(result.data).toBeTruthy();
+      if (result.data) {
+        expect(String(result.data).length).toBeGreaterThan(0);
+      }
+    });
+
+    it("should handle navigation to non-existent page gracefully", { timeout: 30000 }, async () => {
+
+      const result = await run(
+        "Go to https://this-domain-definitely-does-not-exist-12345.com and get the page title",
+        { maxIterations: 2 }
+      );
+
+      expect(result.success).toBe(false);
+    });
   });
-
-  it("should handle navigation to non-existent page gracefully", { timeout: 30000 }, async () => {
-    if (!process.env.CONTAINER_URL) {
-      console.log("Skipping E2E test: CONTAINER_URL not set");
-      expect(true).toBe(true); // Pass the test when skipping
-      return;
-    }
-
-    const result = await run(
-      "Go to https://this-domain-definitely-does-not-exist-12345.com and get the page title",
-      { maxIterations: 2 }
-    );
-
-    expect(result.success).toBe(false);
-  });
-});
+}
