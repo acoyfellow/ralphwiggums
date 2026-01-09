@@ -24,12 +24,6 @@ const app = await alchemy("ralphwiggums", {
   password: process.env.ALCHEMY_PASSWORD || "abc123"
 });
 
-// KV for rate limiting
-const rateLimitKV = await KVNamespace("rate-limit", {
-  title: "ralphwiggums-rate-limit",
-  adopt: true,
-});
-
 // Container for browser automation
 const browserContainer = await Container("ralph-container", {
   className: "RalphContainer",
@@ -42,12 +36,13 @@ const browserContainer = await Container("ralph-container", {
 });
 
 // Worker that handles extraction requests
+// Note: Rate limiting currently uses in-memory Map (see src/index.ts)
+// KV namespace can be added later when needed for distributed rate limiting
 const worker = await Worker("ralphwiggums-api", {
   domains: ["ralphwiggums-api.coey.dev"],
   entrypoint: "./src/worker.ts",
   adopt: true,
   bindings: {
-    RATE_LIMIT_KV: rateLimitKV,
     CONTAINER: browserContainer,
     RALPH_API_KEY: alchemy.secret(process.env.RALPH_API_KEY ?? ""),
     CONTAINER_URL: process.env.CONTAINER_URL ?? "http://localhost:8081",

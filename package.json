@@ -51,7 +51,7 @@
     "dev:start": "./dev.sh start",
     "dev:stop": "./dev.sh stop",
     "dev:container": "source .env && PORT=8081 bun run container/server.ts",
-    "deploy": "alchemy deploy --stage prod",
+    "deploy": "alchemy deploy --stage prod --env-file .env",
     "destroy": "alchemy destroy",
     "prepare": "svelte-kit sync || echo ''",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",

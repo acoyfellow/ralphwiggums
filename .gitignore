@@ -17,6 +17,7 @@ Thumbs.db
 .env.*
 !.env.example
 !.env.test
+.env.bak
 
 # Vite
 vite.config.js.timestamp-*
@@ -26,3 +27,14 @@ vite.config.ts.timestamp-*
 .alchemy/
 
 .claude
+
+# npm pack artifacts
+*.tgz
+*.tar.gz
+
+# Logs
+logs/
+*.log
+
+# Dev vars (local dev config)
+.dev.vars
