@@ -24,7 +24,11 @@ import { CloudflareStateStore } from "alchemy/state";
 
 const app = await alchemy("ralphwiggums", {
   password: process.env.ALCHEMY_PASSWORD || "abc123",
-  stateStore: undefined, // Disable state store completely to avoid crypto issues
+  stateStore: !process.env.CI ? undefined : (scope) => new CloudflareStateStore(scope, {
+    scriptName: `ralphwiggums-state-store`,
+    stateToken: alchemy.secret(process.env.ALCHEMY_STATE_TOKEN || ""),
+    forceUpdate: true,
+  }),
 });
 
 // Container for browser automation
