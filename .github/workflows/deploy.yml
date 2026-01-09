@@ -88,10 +88,11 @@ jobs:
             echo "WARNING: Destroying prod environment!"
             # Allow prod destroy for cleanup
           fi
-      - name: Destroy Preview
-        run: bun alchemy destroy --stage ${{ env.STAGE }}
-        env:
-          ALCHEMY_PASSWORD: ${{ secrets.ALCHEMY_PASSWORD }}
-          ALCHEMY_STATE_TOKEN: ${{ secrets.ALCHEMY_STATE_TOKEN }}
+       - name: Destroy Preview
+         run: bun alchemy destroy --stage ${{ env.STAGE }}
+         env:
+           ALCHEMY_PASSWORD: ${{ secrets.ALCHEMY_PASSWORD }}
+           ALCHEMY_STATE_TOKEN: ${{ secrets.ALCHEMY_STATE_TOKEN }}
+           ALCHEMY_CI_STATE_STORE_CHECK: false
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
