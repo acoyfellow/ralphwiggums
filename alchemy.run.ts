@@ -22,13 +22,15 @@ import { SvelteKit, Worker, Container } from "alchemy/cloudflare";
 
 import { CloudflareStateStore } from "alchemy/state";
 
+// For destroy operations, use no state store to avoid crypto issues
+const isDestroy = process.argv.includes('destroy');
 const app = await alchemy("ralphwiggums", {
   password: process.env.ALCHEMY_PASSWORD || "abc123",
-  stateStore: !process.env.CI ? undefined : (scope) => new CloudflareStateStore(scope, {
+  stateStore: isDestroy ? undefined : (!process.env.CI ? undefined : (scope) => new CloudflareStateStore(scope, {
     scriptName: `ralphwiggums-state-store`,
     stateToken: alchemy.secret(process.env.ALCHEMY_STATE_TOKEN || ""),
     forceUpdate: true,
-  }),
+  })),
 });
 
 // Container for browser automation
