@@ -38,15 +38,11 @@ const app = await alchemy("ralphwiggums", {
 // for container registry authentication
 const browserContainer = await Container("ralph-container", {
   className: "RalphContainer",
-  adopt: true,
+  adopt: false,
   build: {
     context: import.meta.dirname,
     dockerfile: "Dockerfile",
     platform: "linux/amd64",
-  },
-  env: {
-    AI_PROVIDER: "zen",
-    ANTHROPIC_API_KEY: alchemy.secret(process.env.ZEN_API_KEY || ""),
   },
 });
 
