@@ -30,7 +30,7 @@ const app = await alchemy("ralphwiggums", {
 // Container for browser automation
 // Alchemy needs CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN in environment
 // for container registry authentication
-const browserContainer = await Container("ralph-container", {
+const browserContainer = await Container("ralph-container-v2", {
   className: "RalphContainer",
   adopt: true,
   build: {
