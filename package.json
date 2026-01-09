@@ -7,21 +7,21 @@
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "import": "./dist/src/index.js",
+      "types": "./dist/src/index.d.ts"
     },
     "./checkpoint-do": {
-      "import": "./dist/checkpoint-do.js",
-      "types": "./dist/checkpoint-do.d.ts"
+      "import": "./dist/src/checkpoint-do.js",
+      "types": "./dist/src/checkpoint-do.d.ts"
     }
   },
   "files": [
     "LICENSE",
     "README.md",
-    "dist/index.js",
-    "dist/index.d.ts",
-    "dist/checkpoint-do.js",
-    "dist/checkpoint-do.d.ts"
+    "dist/src/index.js",
+    "dist/src/index.d.ts",
+    "dist/src/checkpoint-do.js",
+    "dist/src/checkpoint-do.d.ts"
   ],
   "repository": {
     "type": "git",
@@ -43,7 +43,7 @@
   },
   "homepage": "https://github.com/acoyfellow/ralphwiggums#readme",
   "scripts": {
-    "build": "vite build && tsc",
+    "build": "vite build && tsc --outDir dist --declaration",
     "test": "bun test",
     "watch": "tsc --watch",
     "clean_docker": "",
@@ -55,7 +55,8 @@
     "destroy": "alchemy destroy",
     "prepare": "svelte-kit sync || echo ''",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "alchemy:auth": "alchemy login"
   },
   "dependencies": {
     "@types/node": "^25.0.3",

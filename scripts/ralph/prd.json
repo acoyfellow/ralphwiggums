@@ -181,6 +181,25 @@
       "verification": "bun install succeeds, orchestrator-do.ts compiles, DO binding added to alchemy.run.ts, Effect.runPromise() used for all ironalarm calls, SchedulerService accessed via Effect context"
     },
     {
+      "id": "009.1",
+      "title": "Integrate demo UI with orchestrator for end-to-end testing",
+      "status": "completed",
+      "priority": "P0",
+      "description": "Modify demo UI and API to use orchestrator instead of direct worker calls, enabling users to see orchestrator working end-to-end through the demo interface.",
+      "acceptance_criteria": [
+        "Demo API (/api/product-research) queues tasks via orchestrator instead of calling /do directly",
+        "Demo polls orchestrator for task completion status",
+        "Demo extracts completion data from orchestrator session state",
+        "Users can see orchestrator working through demo UI (queue → process → complete)",
+        "Demo shows task iteration progress and final results",
+        "No direct worker calls - everything goes through orchestrator"
+      ],
+      "dependencies": ["009"],
+      "files_to_modify": ["src/routes/api/product-research/+server.ts"],
+      "verification": "Demo UI successfully queues tasks via orchestrator, shows task progress, and displays completion results from session state",
+      "completed_at": "2026-01-09T10:45:00Z"
+    },
+    {
       "id": "010",
       "title": "Implement Effect-based browser pool management",
       "status": "pending",
@@ -311,6 +330,6 @@
       "verification": "Pool scales up when queue is full, scales down when idle, respects limits, Effect.sleep used for delays"
     }
   ],
-  "completed": ["001", "002", "003", "004", "005", "006", "007", "008"],
-  "next_story_id": "009"
+  "completed": ["001", "002", "003", "004", "005", "006", "007", "008", "009", "009.1"],
+  "next_story_id": "010"
 }

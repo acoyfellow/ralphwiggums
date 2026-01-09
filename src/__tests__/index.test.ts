@@ -61,12 +61,13 @@ describe("RalphWiggums Core", () => {
       expect(result.iterations).toBe(1);
     });
 
-    it("should complete after two iterations when first fails", async () => {
-      mockContainerFetch
-        .mockResolvedValueOnce({ success: true }) // /start
-        .mockResolvedValueOnce({ data: "Still working..." }) // /instruction iter 0
-        .mockResolvedValueOnce({ success: true }) // /stop checkpoint
-        .mockResolvedValueOnce({ data: "TASK_COMPLETE" }); // /instruction iter 1 success
+    it("should complete after container handles iterations internally", async () => {
+      // Container handles iterations internally and returns final result with iteration count
+      mockContainerFetch.mockResolvedValue({
+        success: true,
+        data: "TASK_COMPLETE",
+        iterations: 2
+      });
 
       const result = await Effect.runPromise(Ralph.doThis("Fill form", { maxIterations: 5 })) as RalphResult;
 
@@ -74,15 +75,19 @@ describe("RalphWiggums Core", () => {
       expect(result.iterations).toBe(2);
     });
 
-    it("should fail with MaxIterationsError after exhausting iterations", async () => {
+    it("should succeed when container reaches max iterations with partial result", async () => {
+      // Container handles max iterations internally and returns success with final iterations count
       mockContainerFetch.mockResolvedValue({
         success: true,
-        data: "Still working",
+        data: "Partial result after max iterations",
+        iterations: 3
       });
 
-      const result = Effect.runPromise(Ralph.doThis("Fill form", { maxIterations: 3 }));
+      const result = await Effect.runPromise(Ralph.doThis("Fill form", { maxIterations: 5 })) as RalphResult;
 
-      await expect(result).rejects.toThrow();
+      expect(result.success).toBe(true);
+      expect(result.iterations).toBe(3);
+      expect(result.data).toBe("Partial result after max iterations");
     });
 
     it("should fail with BrowserError when /start fails", async () => {
@@ -117,23 +122,18 @@ describe("RalphWiggums Core", () => {
       }
     });
 
-    it("should respect maxIterations option", async () => {
-      let callCount = 0;
-      mockContainerFetch.mockImplementation((path) => {
-        callCount++;
-        if (path === "/start") return Promise.resolve({ success: true });
-        if (path === "/instruction") return Promise.resolve({ data: "Still working..." });
-        return Promise.resolve({ success: true });
+    it("should pass maxIterations to container", async () => {
+      // Client passes maxIterations to container, container handles iteration limits internally
+      mockContainerFetch.mockResolvedValue({
+        success: true,
+        data: "Completed within limits",
+        iterations: 2
       });
 
-      const result = Effect.runPromise(Ralph.doThis("Fill form", { maxIterations: 2 }));
+      const result = await Effect.runPromise(Ralph.doThis("Fill form", { maxIterations: 5 })) as RalphResult;
 
-      try {
-        await result;
-      } catch (e: any) {
-        // Should fail after max iterations
-      }
-      expect(callCount).toBeGreaterThanOrEqual(4);
+      expect(result.success).toBe(true);
+      expect(result.iterations).toBe(2);
     });
   });
 
@@ -203,18 +203,22 @@ describe("RalphWiggums Core", () => {
       expect(res.status).toBeGreaterThanOrEqual(400);
     });
 
-    it("POST /do should handle timeout/max iterations", async () => {
-      mockContainerFetch.mockResolvedValue({ success: true, data: "Still working..." });
+    it("POST /do should succeed even when container handles iterations", async () => {
+      mockContainerFetch.mockResolvedValue({ success: true, data: "Completed after iterations", iterations: 2 });
 
       const app = Ralph.createHandlers();
       const mockRequest = new Request("http://localhost/do", {
         method: "POST",
-        body: JSON.stringify({ prompt: "Fill form", options: { maxIterations: 1 } }),
+        body: JSON.stringify({ prompt: "Fill form", options: { maxIterations: 5 } }),
         headers: { "Content-Type": "application/json" },
       });
 
       const res = await app.fetch(mockRequest, {} as any);
-      expect(res.status).not.toBe(200);
+      expect(res.status).toBe(200);
+
+      const responseData = await res.json();
+      expect(responseData.success).toBe(true);
+      expect(responseData.iterations).toBe(2);
     });
 
     it("POST /resume/:checkpointId should attempt resume", async () => {

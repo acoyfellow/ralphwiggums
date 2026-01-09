@@ -144,11 +144,22 @@ describe("Checkpoint DO", () => {
         list: vi.fn().mockResolvedValue(new Map()),
       };
 
-      const state = { storage: mockStorage };
+      const state = {
+        storage: mockStorage,
+        waitUntil: vi.fn(),
+        props: {},
+        id: { name: "test", toString: () => "test" },
+        blockConcurrencyWhile: vi.fn().mockResolvedValue(undefined),
+        acceptWebSocket: vi.fn(),
+        getWebSockets: vi.fn().mockReturnValue([]),
+        setWebSocketAutoResponse: vi.fn(),
+        getTags: vi.fn().mockReturnValue([]),
+        abortController: new AbortController()
+      };
       const env = {};
       const request = new Request("http://test/test-0", { method: "GET" });
 
-      const response = await CheckpointDO.fetch(state, env, request);
+      const response = await CheckpointDO.fetch(state as any, env, request);
 
       expect(response.status).toBe(200);
       const body = await response.json() as { checkpointId: string };
@@ -163,11 +174,22 @@ describe("Checkpoint DO", () => {
         list: vi.fn().mockResolvedValue(new Map()),
       };
 
-      const state = { storage: mockStorage };
+      const state = {
+        storage: mockStorage,
+        waitUntil: vi.fn(),
+        props: {},
+        id: { name: "test", toString: () => "test" },
+        blockConcurrencyWhile: vi.fn().mockResolvedValue(undefined),
+        acceptWebSocket: vi.fn(),
+        getWebSockets: vi.fn().mockReturnValue([]),
+        setWebSocketAutoResponse: vi.fn(),
+        getTags: vi.fn().mockReturnValue([]),
+        abortController: new AbortController()
+      };
       const env = {};
       const request = new Request("http://test/non-existent", { method: "GET" });
 
-      const response = await CheckpointDO.fetch(state, env, request);
+      const response = await CheckpointDO.fetch(state as any, env, request);
 
       expect(response.status).toBe(404);
     });
@@ -180,7 +202,18 @@ describe("Checkpoint DO", () => {
         list: vi.fn().mockResolvedValue(new Map()),
       };
 
-      const state = { storage: mockStorage };
+      const state = {
+        storage: mockStorage,
+        waitUntil: vi.fn(),
+        props: {},
+        id: { name: "test", toString: () => "test" },
+        blockConcurrencyWhile: vi.fn().mockResolvedValue(undefined),
+        acceptWebSocket: vi.fn(),
+        getWebSockets: vi.fn().mockReturnValue([]),
+        setWebSocketAutoResponse: vi.fn(),
+        getTags: vi.fn().mockReturnValue([]),
+        abortController: new AbortController()
+      };
       const env = {};
       const checkpointData = {
         checkpointId: "test-0",
@@ -194,7 +227,7 @@ describe("Checkpoint DO", () => {
         body: JSON.stringify(checkpointData),
       });
 
-      const response = await CheckpointDO.fetch(state, env, request);
+      const response = await CheckpointDO.fetch(state as any, env, request);
 
       expect(response.status).toBe(200);
       expect(mockStorage.put).toHaveBeenCalled();
@@ -216,11 +249,22 @@ describe("Checkpoint DO", () => {
         list: vi.fn().mockResolvedValue(new Map()),
       };
 
-      const state = { storage: mockStorage };
+      const state = {
+        storage: mockStorage,
+        waitUntil: vi.fn(),
+        props: {},
+        id: { name: "test", toString: () => "test" },
+        blockConcurrencyWhile: vi.fn().mockResolvedValue(undefined),
+        acceptWebSocket: vi.fn(),
+        getWebSockets: vi.fn().mockReturnValue([]),
+        setWebSocketAutoResponse: vi.fn(),
+        getTags: vi.fn().mockReturnValue([]),
+        abortController: new AbortController()
+      };
       const env = {};
       const request = new Request("http://test/test-0", { method: "DELETE" });
 
-      const response = await CheckpointDO.fetch(state, env, request);
+      const response = await CheckpointDO.fetch(state as any, env, request);
 
       expect(response.status).toBe(200);
       expect(mockStorage.delete).toHaveBeenCalledWith("checkpoint:test-0");
@@ -257,11 +301,22 @@ describe("Checkpoint DO", () => {
         list: vi.fn().mockResolvedValue(new Map()),
       };
 
-      const state = { storage: mockStorage };
+      const state = {
+        storage: mockStorage,
+        waitUntil: vi.fn(),
+        props: {},
+        id: { name: "test", toString: () => "test" },
+        blockConcurrencyWhile: vi.fn().mockResolvedValue(undefined),
+        acceptWebSocket: vi.fn(),
+        getWebSockets: vi.fn().mockReturnValue([]),
+        setWebSocketAutoResponse: vi.fn(),
+        getTags: vi.fn().mockReturnValue([]),
+        abortController: new AbortController()
+      };
       const env = {};
       const request = new Request("http://test/list/test-task", { method: "GET" });
 
-      const response = await CheckpointDO.fetch(state, env, request);
+      const response = await CheckpointDO.fetch(state as any, env, request);
 
       expect(response.status).toBe(200);
       const body = await response.json();
@@ -276,11 +331,22 @@ describe("Checkpoint DO", () => {
         list: vi.fn().mockResolvedValue(new Map()),
       };
 
-      const state = { storage: mockStorage };
+      const state = {
+        storage: mockStorage,
+        waitUntil: vi.fn(),
+        props: {},
+        id: { name: "test", toString: () => "test" },
+        blockConcurrencyWhile: vi.fn().mockResolvedValue(undefined),
+        acceptWebSocket: vi.fn(),
+        getWebSockets: vi.fn().mockReturnValue([]),
+        setWebSocketAutoResponse: vi.fn(),
+        getTags: vi.fn().mockReturnValue([]),
+        abortController: new AbortController()
+      };
       const env = {};
       const request = new Request("http://test/gc", { method: "POST" });
 
-      const response = await CheckpointDO.fetch(state, env, request);
+      const response = await CheckpointDO.fetch(state as any, env, request);
 
       expect(response.status).toBe(200);
     });
@@ -293,11 +359,22 @@ describe("Checkpoint DO", () => {
         list: vi.fn().mockResolvedValue(new Map()),
       };
 
-      const state = { storage: mockStorage };
+      const state = {
+        storage: mockStorage,
+        waitUntil: vi.fn(),
+        props: {},
+        id: { name: "test", toString: () => "test" },
+        blockConcurrencyWhile: vi.fn().mockResolvedValue(undefined),
+        acceptWebSocket: vi.fn(),
+        getWebSockets: vi.fn().mockReturnValue([]),
+        setWebSocketAutoResponse: vi.fn(),
+        getTags: vi.fn().mockReturnValue([]),
+        abortController: new AbortController()
+      };
       const env = {};
       const request = new Request("http://test/unknown", { method: "PUT" });
 
-      const response = await CheckpointDO.fetch(state, env, request);
+      const response = await CheckpointDO.fetch(state as any, env, request);
 
       expect(response.status).toBe(405);
     });

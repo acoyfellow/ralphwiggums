@@ -4,7 +4,7 @@
  */
 
 import { Effect, Data, Layer } from "effect";
-import type { DurableObject } from "@cloudflare/workers-types";
+import type { DurableObject, DurableObjectState, CfProperties } from "@cloudflare/workers-types";
 
 // ============================================================================
 // Errors
@@ -116,17 +116,7 @@ export interface DurableObjectStorage {
 }
 
 /**
- * Checkpoint Durable Object class for Cloudflare Workers.
- *
- * Usage in wrangler.toml:
- * ```toml
- * [[durable_objects.bindings]]
- * name = "CHECKPOINT_DO"
- * class_name = "CheckpointDO"
- *
- * [durable_objects.classes]
- * CheckpointDO = { row_key = "checkpoints", column_key = "task_index" }
- * ```
+ * Checkpoint Durable Object utility class for Cloudflare Workers.
  *
  * Usage in worker:
  * ```typescript
@@ -139,13 +129,12 @@ export interface DurableObjectStorage {
  * }
  * ```
  */
-export class CheckpointDO implements DurableObject {
-  constructor(
-    readonly state: DurableObjectState,
-    readonly env: Record<string, unknown>
-  ) {}
-
-  async fetch(request: Request): Promise<Response> {
+export class CheckpointDO {
+  static async fetch(
+    state: DurableObjectState,
+    env: Record<string, unknown>,
+    request: Request
+  ): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname.slice(1);
 
@@ -154,12 +143,12 @@ export class CheckpointDO implements DurableObject {
         case "GET": {
           if (path.startsWith("list/")) {
             const taskId = path.slice(5);
-            const checkpoints = await this.list(taskId);
+            const checkpoints = await CheckpointDO.list(state, taskId);
             return new Response(JSON.stringify(checkpoints), {
               headers: { "Content-Type": "application/json" },
             });
           }
-          const checkpoint = await this.load(path);
+          const checkpoint = await CheckpointDO.load(state, path);
           if (!checkpoint) {
             return new Response(JSON.stringify({ error: "not found" }), {
               status: 404,
@@ -174,13 +163,13 @@ export class CheckpointDO implements DurableObject {
         case "POST": {
           if (path === "save") {
             const data = await request.json();
-            await this.save(data as CheckpointData);
+            await CheckpointDO.save(state, data as CheckpointData);
             return new Response(JSON.stringify({ success: true }), {
               headers: { "Content-Type": "application/json" },
             });
           }
           if (path === "gc") {
-            await this.gc();
+            await CheckpointDO.gc(state);
             return new Response(JSON.stringify({ success: true }), {
               headers: { "Content-Type": "application/json" },
             });
@@ -192,7 +181,7 @@ export class CheckpointDO implements DurableObject {
         }
 
         case "DELETE": {
-          await this.delete(path);
+          await CheckpointDO.delete(state, path);
           return new Response(JSON.stringify({ success: true }), {
             headers: { "Content-Type": "application/json" },
           });
@@ -221,58 +210,58 @@ export class CheckpointDO implements DurableObject {
   // DO Storage Operations
   // ========================================================================
 
-  private async save(data: CheckpointData): Promise<void> {
-    await this.state.storage.put(`checkpoint:${data.checkpointId}`, data);
+  private static async save(state: DurableObjectState, data: CheckpointData): Promise<void> {
+    await state.storage.put(`checkpoint:${data.checkpointId}`, data);
 
-    const taskIndexRaw = await this.state.storage.get<string[]>(`task_index:${data.taskId}`);
+    const taskIndexRaw = await state.storage.get<string[]>(`task_index:${data.taskId}`);
     const taskIndex = taskIndexRaw || [];
     if (!taskIndex.includes(data.checkpointId)) {
       taskIndex.push(data.checkpointId);
-      await this.state.storage.put(`task_index:${data.taskId}`, taskIndex);
+      await state.storage.put(`task_index:${data.taskId}`, taskIndex);
     }
   }
 
-  private async load(checkpointId: string): Promise<CheckpointData | null> {
-    const data = await this.state.storage.get<CheckpointData>(`checkpoint:${checkpointId}`);
+  private static async load(state: DurableObjectState, checkpointId: string): Promise<CheckpointData | null> {
+    const data = await state.storage.get<CheckpointData>(`checkpoint:${checkpointId}`);
     if (!data) return null;
 
     if (Date.now() > data.expiresAt) {
-      await this.delete(checkpointId);
+      await CheckpointDO.delete(state, checkpointId);
       return null;
     }
 
     return data;
   }
 
-  private async delete(checkpointId: string): Promise<void> {
-    const data = await this.state.storage.get<CheckpointData>(`checkpoint:${checkpointId}`);
+  private static async delete(state: DurableObjectState, checkpointId: string): Promise<void> {
+    const data = await state.storage.get<CheckpointData>(`checkpoint:${checkpointId}`);
     if (!data) return;
 
-    await this.state.storage.delete(`checkpoint:${checkpointId}`);
+    await state.storage.delete(`checkpoint:${checkpointId}`);
 
-    const taskIndexRaw = await this.state.storage.get<string[]>(`task_index:${data.taskId}`);
+    const taskIndexRaw = await state.storage.get<string[]>(`task_index:${data.taskId}`);
     if (taskIndexRaw) {
       const idx = taskIndexRaw.indexOf(checkpointId);
       if (idx >= 0) {
         taskIndexRaw.splice(idx, 1);
         if (taskIndexRaw.length === 0) {
-          await this.state.storage.delete(`task_index:${data.taskId}`);
+          await state.storage.delete(`task_index:${data.taskId}`);
         } else {
-          await this.state.storage.put(`task_index:${data.taskId}`, taskIndexRaw);
+          await state.storage.put(`task_index:${data.taskId}`, taskIndexRaw);
         }
       }
     }
   }
 
-  private async list(taskId: string): Promise<CheckpointData[]> {
-    const taskIndexRaw = await this.state.storage.get<string[]>(`task_index:${taskId}`);
+  private static async list(state: DurableObjectState, taskId: string): Promise<CheckpointData[]> {
+    const taskIndexRaw = await state.storage.get<string[]>(`task_index:${taskId}`);
     if (!taskIndexRaw) return [];
 
     const checkpoints: CheckpointData[] = [];
     const now = Date.now();
 
     for (const checkpointId of taskIndexRaw) {
-      const data = await this.state.storage.get<CheckpointData>(`checkpoint:${checkpointId}`);
+      const data = await state.storage.get<CheckpointData>(`checkpoint:${checkpointId}`);
       if (data && now <= data.expiresAt) {
         checkpoints.push(data);
       }
@@ -281,10 +270,10 @@ export class CheckpointDO implements DurableObject {
     return checkpoints;
   }
 
-  private async gc(): Promise<void> {
+  private static async gc(state: DurableObjectState): Promise<void> {
     const now = Date.now();
 
-    const taskIndexEntries = await this.state.storage.list<unknown>({
+    const taskIndexEntries = await state.storage.list<unknown>({
       start: "task_index:",
       end: "task_index:\xff",
     });
@@ -294,18 +283,18 @@ export class CheckpointDO implements DurableObject {
       const validCheckpoints: string[] = [];
 
       for (const checkpointId of taskIndex) {
-        const data = await this.state.storage.get<CheckpointData>(`checkpoint:${checkpointId}`);
+        const data = await state.storage.get<CheckpointData>(`checkpoint:${checkpointId}`);
         if (data && now <= data.expiresAt) {
           validCheckpoints.push(checkpointId);
         } else {
-          await this.state.storage.delete(`checkpoint:${checkpointId}`);
+          await state.storage.delete(`checkpoint:${checkpointId}`);
         }
       }
 
       if (validCheckpoints.length === 0) {
-        await this.state.storage.delete(key);
+        await state.storage.delete(key);
       } else {
-        await this.state.storage.put(key, validCheckpoints);
+        await state.storage.put(key, validCheckpoints);
       }
     }
   }
