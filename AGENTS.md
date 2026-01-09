@@ -8,6 +8,20 @@ This file is the source-of-truth for:
 - production deploy rules (Cloudflare Containers)
 - known footguns (Docker, Miniflare)
 
+## ⚠️ CRITICAL: YAML Validation Required
+
+**ALL workflow file changes MUST be validated before pushing:**
+
+```bash
+# Install validator
+pip install pyyaml
+
+# Validate before push
+python3 -c "import yaml; yaml.safe_load(open('.github/workflows/deploy.yml'))" && echo "✅ Valid" || echo "❌ Invalid - FIX BEFORE PUSHING"
+```
+
+**NEVER push YAML syntax errors** - they break CI/CD and waste time!
+
 ---
 
 ## NORTH STAR / STOP CONDITION
@@ -36,30 +50,36 @@ If any of the above is not true, keep iterating.
 
 ## ABSOLUTE RULES (non-negotiable)
 
-1) **Do only PRD work**
-- If it isn’t in `scripts/ralph/prd.json`, don’t do it.
+1) **YAML Validation Required**
+- **ALL `.github/workflows/*.yml` changes MUST pass validation before pushing**
+- Use: `python3 -c "import yaml; yaml.safe_load(open('file.yml'))"`
+- **NEVER push invalid YAML** - it breaks CI/CD immediately
 
-2) **One story per iteration**
+2) **Do only PRD work**
+- If it isn't in `scripts/ralph/prd.json`, don't do it.
+
+3) **One story per iteration**
 - Implement exactly one story per iteration (the highest priority failing story).
 
-3) **Verify before commit**
-- Run whatever checks exist (typecheck/tests/lint) before committing.
+4) **Verify before commit**
+- Run typecheck/tests/lint before committing.
 - For Workers/config changes: run local dev and hit endpoints with `curl`.
+- **For workflow changes: validate YAML syntax**
 
-4) **Commit only green**
+5) **Commit only green**
 Commit message:
 - `feat: [ID] - [Title]`
 - `fix: [ID] - [Title]`
 - `chore: [ID] - [Title]`
 
-5) **Memory is files**
+6) **Memory is files**
 Persistent memory is ONLY:
 - git commits
 - `scripts/ralph/prd.json` (task truth)
 - `scripts/ralph/progress.txt` (patterns + learnings)
 - `@CHANGELOG.md` (decisions + deploy notes + gotchas)
 
-6) **Secrets**
+7) **Secrets**
 - Never commit secrets.
 - Never rely on `process.env` in Workers.
 - Use Worker bindings (`env.*`) in production code paths.

@@ -1,0 +1,29 @@
+#!/bin/bash
+# YAML Validation Pre-commit Hook
+# Install: cp .githooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+
+echo "🔍 Validating YAML files..."
+
+# Find all YAML files in .github/workflows/
+YAML_FILES=$(find .github/workflows -name "*.yml" -o -name "*.yaml" 2>/dev/null)
+
+if [ -n "$YAML_FILES" ]; then
+    for file in $YAML_FILES; do
+        if command -v python3 &> /dev/null && python3 -c "import yaml" &> /dev/null; then
+            echo "Checking $file..."
+            if ! python3 -c "import yaml; yaml.safe_load(open('$file'))" 2>/dev/null; then
+                echo "❌ YAML validation failed for $file"
+                echo "Fix the YAML syntax before committing!"
+                exit 1
+            fi
+        else
+            echo "⚠️  Python3 or PyYAML not available - skipping YAML validation"
+        fi
+    done
+    echo "✅ All YAML files valid"
+else
+    echo "ℹ️  No YAML files found to validate"
+fi
+
+echo "🎯 Pre-commit checks passed!"
+exit 0
