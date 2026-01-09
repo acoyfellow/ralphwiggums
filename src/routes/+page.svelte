@@ -203,7 +203,7 @@ console.log(result.data);`;
           Resources
         </div>
         <a
-          href="https://github.com/coeyman/ralphwiggums"
+          href="https://github.com/acoyfellow/ralphwiggums"
           target="_blank"
           class="flex items-center gap-2.5 px-6 py-2.5 text-[13px] text-slate-400 transition-all duration-[0.15s] border-l-2 border-transparent hover:text-slate-50 hover:bg-slate-800"
         >
@@ -223,7 +223,7 @@ console.log(result.data);`;
 
     <div class="p-6 border-t border-slate-700">
       <a
-        href="https://github.com/coeyman/ralphwiggums"
+        href="https://github.com/acoyfellow/ralphwiggums"
         target="_blank"
         class="flex items-center gap-2.5 px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-md text-[12px] text-slate-400 transition-all duration-[0.15s] hover:border-slate-600 hover:text-slate-50"
       >
@@ -252,7 +252,7 @@ console.log(result.data);`;
         <span class="text-sm font-semibold">ralphwiggums</span>
       </div>
       <a
-        href="https://github.com/coeyman/ralphwiggums"
+        href="https://github.com/acoyfellow/ralphwiggums"
         target="_blank"
         class="px-3.5 py-2 bg-slate-800 border border-slate-700 rounded text-[12px] text-slate-400"
         >GitHub</a
@@ -1014,7 +1014,7 @@ console.<span class="text-[#dcdcaa]">log</span>(result.data);
         </p>
         <p class="text-[12px] text-slate-400 mt-2">
           <a
-            href="https://github.com/coeyman/ralphwiggums"
+            href="https://github.com/acoyfellow/ralphwiggums"
             target="_blank"
             class="text-cyan-400 transition-opacity duration-[0.15s] hover:opacity-80"
             >GitHub</a
