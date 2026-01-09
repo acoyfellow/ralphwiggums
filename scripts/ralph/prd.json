@@ -328,8 +328,29 @@
       "dependencies": ["012", "013"],
       "files_to_modify": ["src/orchestrator/pool.ts", "src/orchestrator/dispatcher.ts"],
       "verification": "Pool scales up when queue is full, scales down when idle, respects limits, Effect.sleep used for delays"
+    },
+    {
+      "id": "016",
+      "title": "Fix container authentication in CI/CD deployment",
+      "status": "pending",
+      "priority": "P0",
+      "description": "Fix 'Failed to get container credentials: Authentication error' in production deployment. Container registry authentication failing due to CLOUDFLARE_API_TOKEN permissions or configuration.",
+      "acceptance_criteria": [
+        "CLOUDFLARE_API_TOKEN has 'Containers' edit permissions for the account",
+        "Container deployment succeeds without authentication errors",
+        "bun alchemy deploy --stage prod runs successfully in CI/CD",
+        "Production environment deploys and works end-to-end"
+      ],
+      "dependencies": ["015"],
+      "files_to_modify": [],
+      "verification": "CI/CD deployment passes without container auth errors, production endpoints respond correctly",
+      "known_issues": [
+        "getContainerCredentials() in alchemy failing with 'Authentication error'",
+        "CLOUDFLARE_API_TOKEN is invalid/expired (verification returned false)",
+        "Container registry authentication requires CLOUDFLARE_API_TOKEN with 'Account:Containers:Edit' permission"
+      ]
     }
   ],
   "completed": ["001", "002", "003", "004", "005", "006", "007", "008", "009", "009.1"],
-  "next_story_id": "010"
+  "next_story_id": "017"
 }
