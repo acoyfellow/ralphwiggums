@@ -18,10 +18,18 @@
  */
 
 import alchemy from "alchemy";
-import { SvelteKit, Worker, Container, KVNamespace } from "alchemy/cloudflare";
+import { SvelteKit, Worker, Container } from "alchemy/cloudflare";
+
+import { CloudflareStateStore } from "alchemy/state";
 
 const app = await alchemy("ralphwiggums", {
-  password: process.env.ALCHEMY_PASSWORD || "abc123"
+  password: process.env.ALCHEMY_PASSWORD || "abc123",
+  stateStore: (scope) => new CloudflareStateStore(scope, {
+    scriptName: `ralphwiggums-state-store`,
+    email: process.env.CLOUDFLARE_EMAIL || "default-email",
+    apiToken: alchemy.secret(process.env.CLOUDFLARE_API_TOKEN || "default-api-key"),
+    stateToken: alchemy.secret(process.env.ALCHEMY_STATE_TOKEN || "default-state-token"),
+  })
 });
 
 // Container for browser automation
