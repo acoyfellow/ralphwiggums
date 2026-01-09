@@ -26,13 +26,13 @@ const app = await alchemy("ralphwiggums", {
   password: process.env.ALCHEMY_PASSWORD || "abc123",
   stateStore: (scope) => new CloudflareStateStore(scope, {
     scriptName: `ralphwiggums-state-store`,
-    email: process.env.CLOUDFLARE_EMAIL || "default-email",
-    apiToken: alchemy.secret(process.env.CLOUDFLARE_API_TOKEN || "default-api-key"),
-    stateToken: alchemy.secret(process.env.ALCHEMY_STATE_TOKEN || "default-state-token"),
+    stateToken: alchemy.secret(process.env.ALCHEMY_STATE_TOKEN || ""),
   })
 });
 
 // Container for browser automation
+// Alchemy needs CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN in environment
+// for container registry authentication
 const browserContainer = await Container("ralph-container", {
   className: "RalphContainer",
   adopt: true,
