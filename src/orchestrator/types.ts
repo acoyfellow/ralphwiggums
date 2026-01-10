@@ -126,13 +126,8 @@ export class SchedulerService {
     params?: unknown,
     options?: { priority?: number }
   ): Effect.Effect<void, OrchestratorError> {
-    return Effect.tryPromise({
-      try: () => this.scheduler.schedule(at, taskId, taskName, params, options),
-      catch: (e) =>
-        new OrchestratorError({
-          reason: e instanceof Error ? e.message : "schedule failed",
-        }),
-    });
+    // ironalarm APIs return Effect, so just delegate
+    return this.scheduler.schedule(at, taskId, taskName, params, options) as any;
   }
 
   runNow(
@@ -141,13 +136,8 @@ export class SchedulerService {
     params?: unknown,
     options?: { maxRetries?: number; priority?: number }
   ): Effect.Effect<void, OrchestratorError> {
-    return Effect.tryPromise({
-      try: () => this.scheduler.runNow(taskId, taskName, params, options),
-      catch: (e) =>
-        new OrchestratorError({
-          reason: e instanceof Error ? e.message : "runNow failed",
-        }),
-    });
+    // ironalarm APIs return Effect, so just delegate
+    return this.scheduler.runNow(taskId, taskName, params, options) as any;
   }
 
   checkpoint(
@@ -155,66 +145,36 @@ export class SchedulerService {
     key: string,
     value: unknown
   ): Effect.Effect<void, OrchestratorError> {
-    return Effect.tryPromise({
-      try: () => this.scheduler.checkpoint(taskId, key, value),
-      catch: (e) =>
-        new OrchestratorError({
-          reason: e instanceof Error ? e.message : "checkpoint failed",
-        }),
-    });
+    // ironalarm APIs return Effect, so just delegate
+    return this.scheduler.checkpoint(taskId, key, value) as any;
   }
 
   getCheckpoint(
     taskId: string,
     key: string
   ): Effect.Effect<unknown, OrchestratorError> {
-    return Effect.tryPromise({
-      try: () => this.scheduler.getCheckpoint(taskId, key),
-      catch: (e) =>
-        new OrchestratorError({
-          reason: e instanceof Error ? e.message : "getCheckpoint failed",
-        }),
-    });
+    // ironalarm APIs return Effect, so just delegate
+    return this.scheduler.getCheckpoint(taskId, key) as any;
   }
 
   getTask(taskId: string): Effect.Effect<Task | undefined, OrchestratorError> {
-    return Effect.tryPromise({
-      try: () => this.scheduler.getTask(taskId),
-      catch: (e) =>
-        new OrchestratorError({
-          reason: e instanceof Error ? e.message : "getTask failed",
-        }),
-    });
+    // ironalarm APIs return Effect, so just delegate
+    return this.scheduler.getTask(taskId) as any;
   }
 
   getTasks(status?: Task["status"]): Effect.Effect<Task[], OrchestratorError> {
-    return Effect.tryPromise({
-      try: () => this.scheduler.getTasks(status),
-      catch: (e) =>
-        new OrchestratorError({
-          reason: e instanceof Error ? e.message : "getTasks failed",
-        }),
-    });
+    // ironalarm APIs return Effect, so just delegate
+    return this.scheduler.getTasks(status) as any;
   }
 
   cancelTask(taskId: string): Effect.Effect<boolean, OrchestratorError> {
-    return Effect.tryPromise({
-      try: () => this.scheduler.cancelTask(taskId),
-      catch: (e) =>
-        new OrchestratorError({
-          reason: e instanceof Error ? e.message : "cancelTask failed",
-        }),
-    });
+    // ironalarm APIs return Effect, so just delegate
+    return this.scheduler.cancelTask(taskId) as any;
   }
 
   alarm(): Effect.Effect<void, OrchestratorError> {
-    return Effect.tryPromise({
-      try: () => this.scheduler.alarm(),
-      catch: (e) =>
-        new OrchestratorError({
-          reason: e instanceof Error ? e.message : "alarm failed",
-        }),
-    });
+    // ironalarm APIs return Effect, so just delegate
+    return this.scheduler.alarm() as any;
   }
 
   register(taskName: string, handler: TaskHandler): void {

@@ -644,10 +644,13 @@ export function doThis(
     try {
       const checkpointId = `${taskId}-0`;
       
-      const response = yield* Effect.timeout(
-        Effect.tryPromise({
-          try: () => containerFetch(requestId, "/do", { prompt: validatedPrompt }),
-          catch: (e) => new BrowserError({ 
+       const response = yield* Effect.timeout(
+         Effect.tryPromise({
+           try: () => containerFetch(requestId, "/do", {
+             prompt: validatedPrompt,
+             maxIterations: max
+           }),
+           catch: (e) => new BrowserError({
             reason: e instanceof Error ? e.message : "action failed",
             requestId 
           })
@@ -665,14 +668,14 @@ export function doThis(
           })
         );
         log(requestId, "info", "Task completed", { iterations: response.iterations || 1 });
-        return { 
-          success: true, 
-          message: "Task completed",
-          data: response.data,
-          iterations: response.iterations || 1, 
-          checkpointId,
-          requestId 
-        };
+         return {
+           success: true,
+           message: response.promiseCompleted ? "Task completed via promise tag" : "Task completed",
+           data: response.data,
+           iterations: response.iterations || 1,
+           checkpointId,
+           requestId
+         };
       }
       
       log(requestId, "error", "Task failed", { error: response?.error });

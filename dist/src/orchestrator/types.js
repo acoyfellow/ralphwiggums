@@ -28,68 +28,36 @@ export class SchedulerService {
         this.scheduler = scheduler;
     }
     schedule(at, taskId, taskName, params, options) {
-        return Effect.tryPromise({
-            try: () => this.scheduler.schedule(at, taskId, taskName, params, options),
-            catch: (e) => new OrchestratorError({
-                reason: e instanceof Error ? e.message : "schedule failed",
-            }),
-        });
+        // ironalarm APIs return Effect, so just delegate
+        return this.scheduler.schedule(at, taskId, taskName, params, options);
     }
     runNow(taskId, taskName, params, options) {
-        return Effect.tryPromise({
-            try: () => this.scheduler.runNow(taskId, taskName, params, options),
-            catch: (e) => new OrchestratorError({
-                reason: e instanceof Error ? e.message : "runNow failed",
-            }),
-        });
+        // ironalarm APIs return Effect, so just delegate
+        return this.scheduler.runNow(taskId, taskName, params, options);
     }
     checkpoint(taskId, key, value) {
-        return Effect.tryPromise({
-            try: () => this.scheduler.checkpoint(taskId, key, value),
-            catch: (e) => new OrchestratorError({
-                reason: e instanceof Error ? e.message : "checkpoint failed",
-            }),
-        });
+        // ironalarm APIs return Effect, so just delegate
+        return this.scheduler.checkpoint(taskId, key, value);
     }
     getCheckpoint(taskId, key) {
-        return Effect.tryPromise({
-            try: () => this.scheduler.getCheckpoint(taskId, key),
-            catch: (e) => new OrchestratorError({
-                reason: e instanceof Error ? e.message : "getCheckpoint failed",
-            }),
-        });
+        // ironalarm APIs return Effect, so just delegate
+        return this.scheduler.getCheckpoint(taskId, key);
     }
     getTask(taskId) {
-        return Effect.tryPromise({
-            try: () => this.scheduler.getTask(taskId),
-            catch: (e) => new OrchestratorError({
-                reason: e instanceof Error ? e.message : "getTask failed",
-            }),
-        });
+        // ironalarm APIs return Effect, so just delegate
+        return this.scheduler.getTask(taskId);
     }
     getTasks(status) {
-        return Effect.tryPromise({
-            try: () => this.scheduler.getTasks(status),
-            catch: (e) => new OrchestratorError({
-                reason: e instanceof Error ? e.message : "getTasks failed",
-            }),
-        });
+        // ironalarm APIs return Effect, so just delegate
+        return this.scheduler.getTasks(status);
     }
     cancelTask(taskId) {
-        return Effect.tryPromise({
-            try: () => this.scheduler.cancelTask(taskId),
-            catch: (e) => new OrchestratorError({
-                reason: e instanceof Error ? e.message : "cancelTask failed",
-            }),
-        });
+        // ironalarm APIs return Effect, so just delegate
+        return this.scheduler.cancelTask(taskId);
     }
     alarm() {
-        return Effect.tryPromise({
-            try: () => this.scheduler.alarm(),
-            catch: (e) => new OrchestratorError({
-                reason: e instanceof Error ? e.message : "alarm failed",
-            }),
-        });
+        // ironalarm APIs return Effect, so just delegate
+        return this.scheduler.alarm();
     }
     register(taskName, handler) {
         this.scheduler.register(taskName, handler);

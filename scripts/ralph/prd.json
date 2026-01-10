@@ -194,7 +194,7 @@
         "Demo shows task iteration progress and final results",
         "No direct worker calls - everything goes through orchestrator"
       ],
-      "dependencies": ["009"],
+       "dependencies": ["020"],
       "files_to_modify": ["src/routes/api/product-research/+server.ts"],
       "verification": "Demo UI successfully queues tasks via orchestrator, shows task progress, and displays completion results from session state",
       "completed_at": "2026-01-09T10:45:00Z"
@@ -216,7 +216,7 @@
         "All pool operations are Effect-based (no raw promises)",
         "**NO Promise.all, NO try/catch, NO setTimeout** - Effect only"
       ],
-      "dependencies": ["009"],
+       "dependencies": ["020"],
       "new_files": ["src/orchestrator/pool.ts"],
       "verification": "Pool functions compile, Effect.all used for concurrency, health checks run in parallel, NO raw promises found in code"
     },
@@ -238,7 +238,7 @@
         "Session state persisted in DO storage via ironalarm checkpoints",
         "**NO raw promises, NO try/catch - Effect only, use SchedulerService from context**"
       ],
-      "dependencies": ["009", "010"],
+       "dependencies": ["020"],
       "files_to_modify": ["src/orchestrator/orchestrator-do.ts"],
       "new_files": ["src/orchestrator/session.ts"],
       "verification": "Checkpoint saves/loads work via Effect, promise detection finds tags, task resumes after eviction, SchedulerService used from Effect context, all operations return Effect"
@@ -261,7 +261,7 @@
         "Dispatcher loop runs continuously (Effect.forever or similar)",
         "**NO Promise.all, NO try/catch - Effect only, scheduler.getTasks() returns Effect**"
       ],
-      "dependencies": ["010", "011"],
+       "dependencies": ["020"],
       "new_files": ["src/orchestrator/dispatcher.ts"],
       "verification": "Dispatcher routes tasks to browsers, parallel execution works, pool exhaustion handled, Effect.all used for concurrency, scheduler.getTasks() wrapped with Effect.runPromise() or used in Effect.gen"
     },
@@ -283,7 +283,7 @@
         "Error handling for invalid requests (ironalarm errors are tagged: HandlerMissing, TaskNotFound, etc.)",
         "**NO raw promises, NO try/catch - Effect only, all ironalarm calls use Effect.runPromise()**"
       ],
-      "dependencies": ["012"],
+       "dependencies": ["020"],
       "new_files": ["src/orchestrator/handlers.ts"],
       "files_to_modify": ["src/index.ts"],
       "verification": "All endpoints respond correctly, curl tests pass, error handling works, Effect.runPromise() used for all ironalarm operations"
@@ -325,7 +325,7 @@
         "Manual scaling via API still works (POST /orchestrator/scale)",
         "**NO setTimeout, NO raw promises - Effect only**"
       ],
-      "dependencies": ["012", "013"],
+       "dependencies": ["020"],
       "files_to_modify": ["src/orchestrator/pool.ts", "src/orchestrator/dispatcher.ts"],
       "verification": "Pool scales up when queue is full, scales down when idle, respects limits, Effect.sleep used for delays"
     },
@@ -341,7 +341,7 @@
         "bun alchemy deploy --stage prod runs successfully in CI/CD",
         "Production environment deploys and works end-to-end"
       ],
-      "dependencies": ["015"],
+       "dependencies": ["020"],
       "files_to_modify": [],
       "verification": "CI/CD deployment passes without container auth errors, production endpoints respond correctly",
       "known_issues": [
@@ -350,29 +350,89 @@
         "Container registry authentication requires CLOUDFLARE_API_TOKEN with 'Account:Containers:Edit' permission"
       ]
     },
-    {
-      "id": "017",
-      "title": "Fix deployment Durable Object conflicts",
-      "status": "pending",
-      "priority": "P0",
-      "description": "Fix DURABLE_OBJECT_ALREADY_HAS_APPLICATION error during deployment. Container creates successfully but Worker fails due to existing Durable Object. Need proper cleanup or adopt configuration.",
-      "acceptance_criteria": [
-        "bun alchemy deploy --stage prod succeeds without Durable Object conflicts",
-        "Container and Worker deploy together successfully",
-        "No manual destroy steps required for redeployment",
-        "Production environment deploys reliably"
-      ],
-      "dependencies": ["016"],
-      "files_to_modify": ["alchemy.run.ts"],
-      "verification": "Multiple deployment attempts succeed without conflicts, production endpoints work",
-      "known_issues": [
-        "DURABLE_OBJECT_ALREADY_HAS_APPLICATION for ralphwiggums-ralph-container-prod",
-        "Container creates but Worker binding fails due to existing DO",
-        "adopt: true may not be working properly for container bindings",
-        "Manual destroy works but not ideal for CI/CD"
-      ]
-    }
+     {
+       "id": "017",
+       "title": "Fix deployment Durable Object conflicts",
+       "status": "pending",
+       "priority": "P0",
+       "description": "Fix DURABLE_OBJECT_ALREADY_HAS_APPLICATION error during deployment. Container creates successfully but Worker fails due to existing Durable Object. Need proper cleanup or adopt configuration.",
+       "acceptance_criteria": [
+         "bun alchemy deploy --stage prod succeeds without Durable Object conflicts",
+         "Container and Worker deploy together successfully",
+         "No manual destroy steps required for redeployment",
+         "Production environment deploys reliably"
+       ],
+       "dependencies": ["016"],
+       "files_to_modify": ["alchemy.run.ts"],
+       "verification": "Multiple deployment attempts succeed without conflicts, production endpoints work",
+       "known_issues": [
+         "DURABLE_OBJECT_ALREADY_HAS_APPLICATION for ralphwiggums-ralph-container-prod",
+         "Container creates but Worker binding fails due to existing DO",
+         "adopt: true may not be working properly for container bindings",
+         "Manual destroy works but not ideal for CI/CD"
+       ]
+     },
+     {
+       "id": "018",
+       "title": "Add promise tag detection to container server",
+       "status": "pending",
+       "priority": "P0",
+       "description": "Implement promise tag detection in container server to enable ralph-loop completion detection. Container must check for <promise>TASK_COMPLETE</promise> pattern and stop iterating when found.",
+       "acceptance_criteria": [
+         "Container checks response for <promise>TASK_COMPLETE</promise> pattern after each iteration",
+         "Loop stops immediately when promise tag is detected",
+         "Promise tag text is returned in response data",
+         "Max iterations still enforced as safety limit",
+         "Works with both action and extraction prompts",
+         "Integration tests verify promise tag detection stops loop"
+       ],
+       "dependencies": [],
+       "files_to_modify": ["container/server.ts"],
+       "new_files": [],
+       "verification": "Container /do endpoint detects promise tags and stops iterating, tests pass showing early completion",
+       "notes": "This enables the orchestrator to detect task completion without hardcoded iteration limits"
+     },
+     {
+       "id": "019",
+       "title": "Resolve browser pool vs container architecture conflict",
+       "status": "pending",
+       "priority": "P0",
+       "description": "Resolve fundamental conflict between browser pool (persistent browsers) and container (create/destroy per request). Decide on architecture: pool manages persistent browsers OR pool borrows browsers via /do calls.",
+       "acceptance_criteria": [
+         "Clear decision on browser lifecycle ownership (pool vs container)",
+         "Architecture supports concurrent browser automation tasks",
+         "No resource leaks from browser lifecycle management",
+         "Integration point defined between pool and container",
+         "Pool can acquire/release browsers reliably",
+         "Container API works with chosen architecture"
+       ],
+       "dependencies": ["018"],
+       "files_to_modify": ["container/server.ts", "src/orchestrator/pool.ts"],
+       "new_files": [],
+       "verification": "Architecture decision documented, pool can manage browser resources without conflicts",
+       "notes": "Two options: 1) Pool manages persistent browsers (requires container API changes), 2) Pool borrows browsers via /do calls (simpler but no persistence)"
+     },
+     {
+       "id": "020",
+       "title": "Clarify iteration control ownership between container and orchestrator",
+       "status": "pending",
+       "priority": "P0",
+       "description": "Resolve who controls iterations: container (internal ralph-loop) or orchestrator (external checkpointing). Currently both systems implement iteration logic.",
+       "acceptance_criteria": [
+         "Clear ownership decision: container handles iterations OR orchestrator handles iterations",
+         "No dual iteration logic causing conflicts",
+         "Checkpoint/resume works with chosen approach",
+         "Promise tag detection integrates with iteration control",
+         "Session state management works correctly",
+         "API contracts defined between container and orchestrator"
+       ],
+       "dependencies": ["018", "019"],
+       "files_to_modify": ["container/server.ts", "src/orchestrator/session.ts", "src/orchestrator/orchestrator-do.ts"],
+       "new_files": [],
+       "verification": "Single source of truth for iteration control, no conflicts between systems",
+       "notes": "Container currently runs full ralph-loop internally, orchestrator wants external control for checkpointing"
+     }
   ],
-  "completed": ["001", "002", "003", "004", "005", "006", "007", "008", "009", "009.1"],
-  "next_story_id": "018"
+   "completed": ["001", "002", "003", "004", "005", "006", "007", "008", "009", "009.1"],
+   "next_story_id": "021"
 }

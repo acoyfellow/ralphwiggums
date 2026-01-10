@@ -1,0 +1,95 @@
+{
+    "name": "ralphwiggums",
+    "version": "0.0.1",
+    "description": "Ralph Wiggum agent for web automation - Effect-first browser automation with OpenCode Zen",
+    "type": "module",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": "./dist/src/index.js",
+            "types": "./dist/src/index.d.ts"
+        },
+        "./checkpoint-do": {
+            "import": "./dist/src/checkpoint-do.js",
+            "types": "./dist/src/checkpoint-do.d.ts"
+        }
+    },
+    "files": [
+        "LICENSE",
+        "README.md",
+        "dist/src/index.js",
+        "dist/src/index.d.ts",
+        "dist/src/checkpoint-do.js",
+        "dist/src/checkpoint-do.d.ts"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/acoyfellow/ralphwiggums"
+    },
+    "license": "MIT",
+    "keywords": [
+        "browser-automation",
+        "cloudflare-workers",
+        "effect-ts",
+        "stagehand",
+        "ai-agent",
+        "web-automation",
+        "form-filling"
+    ],
+    "author": "Jordan Coeyman <jordan@coey.dev>",
+    "bugs": {
+        "url": "https://github.com/acoyfellow/ralphwiggums/issues"
+    },
+    "homepage": "https://github.com/acoyfellow/ralphwiggums#readme",
+    "scripts": {
+        "build": "vite build && tsc --outDir dist --declaration",
+        "test": "bun test src/__tests__/",
+        "watch": "tsc --watch",
+        "clean_docker": "",
+        "dev": " lsof -ti:5153 | xargs kill -9 && alchemy dev",
+        "dev:start": "./dev.sh start",
+        "dev:stop": "./dev.sh stop",
+        "dev:container": "source .env && PORT=8081 bun run container/server.ts",
+        "deploy": "alchemy deploy --stage prod --env-file .env",
+        "destroy": "alchemy destroy --stage prod --env-file .env",
+        "prepare": "svelte-kit sync || echo ''",
+        "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+        "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+        "alchemy:auth": "alchemy login"
+    },
+    "dependencies": {
+        "@types/node": "^25.0.6",
+        "alchemy": "^0.83.0",
+        "effect": "^3.19.14",
+        "hono": "^4.11.3",
+        "ironalarm": "^0.2.0",
+        "svelte-tiny-slider": "^2.4.1"
+    },
+    "devDependencies": {
+        "@browserbasehq/stagehand": "^3.0.7",
+        "@cloudflare/containers": "^0.0.31",
+        "@cloudflare/kv-asset-handler": "^0.4.1",
+        "@cloudflare/workers-types": "^4.20260109.0",
+        "@sveltejs/adapter-cloudflare": "^7.2.4",
+        "@sveltejs/kit": "^2.49.4",
+        "@sveltejs/vite-plugin-svelte": "^6.2.4",
+        "@tailwindcss/vite": "^4.1.18",
+        "@types/ws": "^8.18.1",
+        "svelte": "^5.46.1",
+        "svelte-check": "^4.3.5",
+        "tailwindcss": "^4.1.18",
+        "typescript": "^5.9.3",
+        "vite": "^7.3.1",
+        "vitest": "^4.0.16",
+        "zod": "^4.3.5"
+    },
+    "peerDependencies": {
+        "@cloudflare/containers": "^0.0.30",
+        "@cloudflare/workers-types": "^4.0.0",
+        "zod": "^4.0.0"
+    },
+    "engines": {
+        "node": ">=18"
+    }
+}

@@ -1,7 +1,7 @@
 /// <reference types="@types/node" />
 
 import alchemy from "alchemy";
-import { SvelteKit, Worker, Container } from "alchemy/cloudflare";
+import { SvelteKit, Worker, Container, DurableObject } from "alchemy/cloudflare";
 import { CloudflareStateStore } from "alchemy/state";
 
 const project = "ralphwiggums";
@@ -25,12 +25,19 @@ const browserContainer = await Container(`${project}-container`, {
   },
 });
 
+const orchestratorDO = await DurableObject(`${project}-orchestrator`, {
+  className: "OrchestratorDO",
+  entrypoint: "./src/orchestrator/orchestrator-do.ts",
+  adopt: false,
+});
+
 const worker = await Worker(`${project}-api`, {
   domains: ["ralphwiggums-api.coey.dev"],
   entrypoint: "./src/worker.ts",
   adopt: true,
   bindings: {
     CONTAINER: browserContainer,
+    ORCHESTRATOR: orchestratorDO,
     RALPH_API_KEY: alchemy.secret(process.env.RALPH_API_KEY ?? ""),
     CONTAINER_URL: process.env.CONTAINER_URL ?? "http://localhost:8081",
   },

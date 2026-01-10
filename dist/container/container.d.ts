@@ -10,7 +10,7 @@ export declare class RalphContainer extends Container {
         CLOUDFLARE_ACCOUNT_ID: string;
         CLOUDFLARE_API_TOKEN: string;
         CLOUDFLARE_MODEL: string;
-        ZEN_API_KEY: string;
+        ANTHROPIC_API_KEY: string;
         ZEN_MODEL: string;
     };
     onRequest(request: Request): Promise<Response>;

@@ -63,7 +63,7 @@
     "alchemy": "^0.83.0",
     "effect": "^3.19.14",
     "hono": "^4.11.3",
-    "ironalarm": "^0.1.0",
+    "ironalarm": "^0.2.0",
     "svelte-tiny-slider": "^2.4.1"
   },
   "devDependencies": {

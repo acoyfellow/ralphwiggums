@@ -11,8 +11,11 @@ import { WebSocketServer, WebSocket } from "ws";
 import { z } from "zod";
 
 // ============================================================================
-// Types
+// Types & Constants
 // ============================================================================
+
+// Promise tag detection regex
+const PROMISE_TAG_REGEX = /<promise>(.*?)<\/promise>/gi;
 
 export interface StartRequest {
   viewport?: { width: number; height: number };
@@ -31,6 +34,7 @@ export interface ExtractRequest {
 export interface DoRequest {
   prompt: string;
   stream?: boolean; // Enable WebSocket streaming
+  maxIterations?: number; // Maximum iterations for ralph-loop (default: 3)
 }
 
 // ============================================================================
@@ -48,15 +52,31 @@ export type RalphEvent =
   | { type: "iteration"; iteration: number; maxIterations: number; timestamp: number }
   | { type: "action"; action: string; timestamp: number }
   | { type: "log"; level: string; message: string; category?: string; timestamp: number }
-  | { type: "progress"; message: string; timestamp: number }
   | { type: "extraction"; extraction: string; timestamp: number }
+  | { type: "progress"; message: string; timestamp: number }
+  | { type: "promise"; promise: string; timestamp: number }
   | { type: "success"; data: string; iterations: number; timestamp: number }
   | { type: "error"; message: string; timestamp: number };
 
 // ============================================================================
-// Browser State
+// Browser State & Pool Management
 // ============================================================================
 
+// Browser instance with metadata for pool management
+interface BrowserInstance {
+  id: string;
+  browser: Stagehand;
+  status: 'available' | 'busy' | 'unhealthy';
+  createdAt: number;
+  lastUsedAt: number;
+  taskCount: number;
+}
+
+// Global browser pool for persistent browser management
+const browserPool = new Map<string, BrowserInstance>();
+let nextBrowserId = 1;
+
+// Legacy single browser for backward compatibility
 let browser: Stagehand | null = null;
 let browserFactory: () => Stagehand = () => {
   const provider = (process.env.AI_PROVIDER?.toLowerCase() as AIProvider) || "groq";
@@ -116,6 +136,146 @@ export function setBrowser(b: Stagehand | null): void {
 
 export function resetBrowser(): void {
   browser = null;
+}
+
+// ============================================================================
+// Browser Pool Management Functions
+// ============================================================================
+
+/**
+ * Create a new browser instance in the pool
+ */
+export async function createBrowserInstance(): Promise<string> {
+  const id = `browser_${nextBrowserId++}`;
+  const browser = browserFactory();
+
+  // Initialize the browser
+  if (browser && typeof (browser as any).init === "function") {
+    await (browser as any).init();
+  }
+
+  const instance: BrowserInstance = {
+    id,
+    browser,
+    status: 'available',
+    createdAt: Date.now(),
+    lastUsedAt: Date.now(),
+    taskCount: 0,
+  };
+
+  browserPool.set(id, instance);
+  console.log(`Created browser instance ${id}`);
+  return id;
+}
+
+/**
+ * Acquire an available browser from the pool
+ */
+export function acquireBrowser(): BrowserInstance | null {
+  for (const [id, instance] of browserPool) {
+    if (instance.status === 'available') {
+      instance.status = 'busy';
+      instance.lastUsedAt = Date.now();
+      instance.taskCount++;
+      console.log(`Acquired browser instance ${id}`);
+      return instance;
+    }
+  }
+  return null; // No available browsers
+}
+
+/**
+ * Acquire a specific browser by ID
+ */
+export function acquireBrowserById(id: string): BrowserInstance | null {
+  const instance = browserPool.get(id);
+  if (instance && instance.status === 'available') {
+    instance.status = 'busy';
+    instance.lastUsedAt = Date.now();
+    instance.taskCount++;
+    console.log(`Acquired browser instance ${id}`);
+    return instance;
+  }
+  return null;
+}
+
+/**
+ * Release a browser back to the pool
+ */
+export function releaseBrowser(id: string): void {
+  const instance = browserPool.get(id);
+  if (instance && instance.status === 'busy') {
+    instance.status = 'available';
+    instance.lastUsedAt = Date.now();
+    console.log(`Released browser instance ${id}`);
+  }
+}
+
+/**
+ * Mark a browser as unhealthy and remove it
+ */
+export async function removeBrowser(id: string): Promise<void> {
+  const instance = browserPool.get(id);
+  if (instance) {
+    try {
+      await instance.browser.close();
+    } catch (e) {
+      console.error(`Error closing browser ${id}:`, e);
+    }
+    browserPool.delete(id);
+    console.log(`Removed unhealthy browser instance ${id}`);
+  }
+}
+
+/**
+ * Get pool status
+ */
+export function getPoolStatus() {
+  const instances = Array.from(browserPool.values());
+  return {
+    total: instances.length,
+    available: instances.filter(i => i.status === 'available').length,
+    busy: instances.filter(i => i.status === 'busy').length,
+    unhealthy: instances.filter(i => i.status === 'unhealthy').length,
+    instances: instances.map(i => ({
+      id: i.id,
+      status: i.status,
+      taskCount: i.taskCount,
+      lastUsedAt: i.lastUsedAt,
+    })),
+  };
+}
+
+/**
+ * Health check all browsers in the pool
+ */
+export async function healthCheckPool(): Promise<void> {
+  for (const [id, instance] of browserPool) {
+    try {
+      // Simple health check - try to get the active page
+      const page = instance.browser.context.activePage();
+      if (!page) {
+        throw new Error('No active page');
+      }
+      // Could add more sophisticated checks here
+    } catch (e) {
+      console.warn(`Browser ${id} failed health check:`, e);
+      instance.status = 'unhealthy';
+    }
+  }
+}
+
+/**
+ * Clean up old/unused browsers
+ */
+export async function cleanupPool(maxAge: number = 30 * 60 * 1000): Promise<void> {
+  const now = Date.now();
+  for (const [id, instance] of browserPool) {
+    if (instance.status === 'available' && (now - instance.lastUsedAt) > maxAge) {
+      console.log(`Cleaning up old browser ${id}`);
+      await removeBrowser(id);
+    }
+  }
 }
 
 // ============================================================================
@@ -308,15 +468,74 @@ export async function handleExtract(req: http.IncomingMessage): Promise<Response
 }
 
 export async function handleStop(): Promise<Response> {
+  if (browser) {
+    await browser.close();
+    browser = null;
+  }
+  return json({ success: true, message: "Browser stopped" });
+}
+
+// ============================================================================
+// Pool Management Handlers
+// ============================================================================
+
+export async function handlePoolStatus(): Promise<Response> {
   try {
-    if (browser) {
-      await browser.close();
-      browser = null;
-    }
-    return json({ success: true, data: null });
+    const status = getPoolStatus();
+    return json({ success: true, data: status });
   } catch (e) {
-    console.error("Stop error:", e);
-    return createError(e instanceof Error ? e.message : "Stop failed");
+    return createError(e instanceof Error ? e.message : "Failed to get pool status");
+  }
+}
+
+export async function handleCreateBrowser(): Promise<Response> {
+  try {
+    const browserId = await createBrowserInstance();
+    return json({ success: true, data: { browserId } });
+  } catch (e) {
+    return createError(e instanceof Error ? e.message : "Failed to create browser");
+  }
+}
+
+export async function handleAcquireBrowser(): Promise<Response> {
+  try {
+    const instance = acquireBrowser();
+    if (instance) {
+      return json({ success: true, data: { browserId: instance.id } });
+    } else {
+      return createError("No available browsers in pool", 503);
+    }
+  } catch (e) {
+    return createError(e instanceof Error ? e.message : "Failed to acquire browser");
+  }
+}
+
+export async function handleReleaseBrowser(id: string): Promise<Response> {
+  try {
+    releaseBrowser(id);
+    return json({ success: true, message: `Browser ${id} released` });
+  } catch (e) {
+    return createError(e instanceof Error ? e.message : "Failed to release browser");
+  }
+}
+
+export async function handlePoolHealthCheck(): Promise<Response> {
+  try {
+    await healthCheckPool();
+    const status = getPoolStatus();
+    return json({ success: true, data: status });
+  } catch (e) {
+    return createError(e instanceof Error ? e.message : "Health check failed");
+  }
+}
+
+export async function handlePoolCleanup(): Promise<Response> {
+  try {
+    await cleanupPool();
+    const status = getPoolStatus();
+    return json({ success: true, data: status });
+  } catch (e) {
+    return createError(e instanceof Error ? e.message : "Cleanup failed");
   }
 }
 
@@ -337,6 +556,7 @@ export async function handleDo(req: http.IncomingMessage): Promise<Response> {
 
     const prompt = body.prompt;
     const stream = body.stream ?? false;
+    const maxIterations = body.maxIterations ?? 3; // Allow orchestrator to control iterations
     const startTime = Date.now();
 
     // Broadcast start event
@@ -345,7 +565,7 @@ export async function handleDo(req: http.IncomingMessage): Promise<Response> {
     // Start browser if not already running
     if (!browser) {
       browser = browserFactory();
-      
+
       // Call actual init if it's a real Stagehand instance
       if (browser && typeof (browser as any).init === "function") {
         try {
@@ -358,14 +578,14 @@ export async function handleDo(req: http.IncomingMessage): Promise<Response> {
 
     // Check if this is an extraction request
     const extractionKeywords = ["extract", "get", "find", "what is", "what's", "list", "count", "title", "text", "content", "visible"];
-    const isExtractionPrompt = extractionKeywords.some(keyword => 
+    const isExtractionPrompt = extractionKeywords.some(keyword =>
       prompt.toLowerCase().includes(keyword)
     );
 
     let responseData: string = "";
     let iterations = 0;
-    const maxIterations = 3;
     let lastError: string | null = null;
+    let promiseText: string | null = null;
 
     // Iterative extraction with learning
     while (iterations < maxIterations) {
@@ -403,9 +623,19 @@ export async function handleDo(req: http.IncomingMessage): Promise<Response> {
         if (extracted && typeof extracted === "object") {
           // @ts-ignore - Stagehand returns { extraction: "text" }
           const result = extracted.extraction || extracted.text || extracted.data || JSON.stringify(extracted);
-          
+
           broadcastEvent({ type: "extraction", extraction: result.substring(0, 200), timestamp: Date.now() });
-          
+
+          // Check for promise tag completion
+          PROMISE_TAG_REGEX.lastIndex = 0; // Reset regex for consistent behavior
+          const promiseMatch = PROMISE_TAG_REGEX.exec(result);
+          if (promiseMatch) {
+            promiseText = promiseMatch[1];
+            responseData = promiseText; // Return the promise text as the result
+            broadcastEvent({ type: "promise", promise: promiseText, timestamp: Date.now() });
+            break; // Exit loop immediately on promise detection
+          }
+
           // Check if result indicates failure
           const failureIndicators = [
             "cannot extract",
@@ -434,16 +664,32 @@ export async function handleDo(req: http.IncomingMessage): Promise<Response> {
         // Use act() for action tasks
         broadcastEvent({ type: "action", action: prompt.substring(0, 50), timestamp: Date.now() });
         const result = await browser.act(prompt);
-        
+
+        let resultText: string;
         if (typeof result === "string") {
-          responseData = result;
-          break; // Assume success for action tasks
+          resultText = result;
         } else if (result && typeof result === "object") {
           // Handle ActResult object
-          responseData = result.message || JSON.stringify(result);
+          resultText = result.message || JSON.stringify(result);
+        } else {
+          resultText = String(result);
+        }
+
+        // Check for promise tag completion
+        PROMISE_TAG_REGEX.lastIndex = 0; // Reset regex for consistent behavior
+        const promiseMatch = PROMISE_TAG_REGEX.exec(resultText);
+        if (promiseMatch) {
+          promiseText = promiseMatch[1];
+          responseData = promiseText; // Return the promise text as the result
+          broadcastEvent({ type: "promise", promise: promiseText, timestamp: Date.now() });
+          break; // Exit loop immediately on promise detection
+        }
+
+        if (typeof result === "string" || (result && typeof result === "object")) {
+          responseData = resultText;
           break; // Assume success for action tasks
         } else {
-          lastError = String(result);
+          lastError = resultText;
         }
       }
     }
@@ -457,7 +703,7 @@ export async function handleDo(req: http.IncomingMessage): Promise<Response> {
     const totalTime = Date.now() - startTime;
     broadcastEvent({ type: "success", data: responseData.substring(0, 200), iterations, timestamp: Date.now() });
 
-    return json({ success: true, data: responseData, iterations, totalTime });
+    return json({ success: true, data: responseData, iterations, totalTime, promiseCompleted: promiseText !== null });
   } catch (e) {
     console.error("Do error:", e);
     broadcastEvent({ type: "error", message: e instanceof Error ? e.message : "Unknown error", timestamp: Date.now() });
@@ -507,6 +753,32 @@ export async function route(req: http.IncomingMessage): Promise<Response> {
 
   if (pathname === "/do" && method === "POST") {
     return handleDo(req);
+  }
+
+  // Pool management endpoints
+  if (pathname === "/pool/status" && method === "GET") {
+    return handlePoolStatus();
+  }
+
+  if (pathname === "/pool/create" && method === "POST") {
+    return handleCreateBrowser();
+  }
+
+  if (pathname === "/pool/acquire" && method === "POST") {
+    return handleAcquireBrowser();
+  }
+
+  if (pathname.startsWith("/pool/release/") && method === "POST") {
+    const id = pathname.replace("/pool/release/", "");
+    return handleReleaseBrowser(id);
+  }
+
+  if (pathname === "/pool/health-check" && method === "POST") {
+    return handlePoolHealthCheck();
+  }
+
+  if (pathname === "/pool/cleanup" && method === "POST") {
+    return handlePoolCleanup();
   }
 
   // SSE endpoint for real-time events (works in Cloudflare Workers)
