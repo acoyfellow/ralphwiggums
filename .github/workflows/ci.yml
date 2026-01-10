@@ -56,7 +56,20 @@ jobs:
     - name: Build package
       run: npm run build
 
+    - name: Check if version exists on npm
+      id: check-version
+      run: |
+        PACKAGE_VERSION=$(node -p "require('./package.json').version")
+        if npm view ralphwiggums@$PACKAGE_VERSION version 2>/dev/null; then
+          echo "Version $PACKAGE_VERSION already exists on npm"
+          echo "should_publish=false" >> $GITHUB_OUTPUT
+        else
+          echo "Version $PACKAGE_VERSION not found on npm, will publish"
+          echo "should_publish=true" >> $GITHUB_OUTPUT
+        fi
+
     - name: Publish to npm
+      if: steps.check-version.outputs.should_publish == 'true'
       run: npm publish --access public
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -64,7 +77,7 @@ jobs:
   release:
     needs: publish
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.publish.result == 'success'
 
     steps:
     - uses: actions/checkout@v4
