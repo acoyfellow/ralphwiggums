@@ -1,42 +1,21 @@
 /// <reference types="@types/node" />
 
-/**
- * Alchemy Infrastructure Definition for ralphwiggums
- *
- * Manages:
- * - ralphwiggums-demo: SvelteKit app with Worker binding for container calls
- */
-
-/// <reference types="@types/node" />
-
-/**
- * Alchemy Infrastructure Definition for ralphwiggums
- *
- * Manages:
- * - ralphwiggums-api: Worker with container bindings
- * - ralphwiggums-demo: SvelteKit app with service binding to worker
- */
-
 import alchemy from "alchemy";
 import { SvelteKit, Worker, Container } from "alchemy/cloudflare";
-
 import { CloudflareStateStore } from "alchemy/state";
 
-const dev = process.env.STAGE !== "prod" || !process.env.CI;
+const project = "ralphwiggums";
 
-const app = await alchemy("ralphwiggums", {
+const app = await alchemy(project, {
   password: process.env.ALCHEMY_PASSWORD || "abc123",
-  stateStore: dev ? undefined : (scope) => new CloudflareStateStore(scope, {
-    scriptName: `ralphwiggums-state-store`,
+  stateStore: (scope) => new CloudflareStateStore(scope, {
+    scriptName: `${project}-state`,
     stateToken: alchemy.secret(process.env.ALCHEMY_STATE_TOKEN || ""),
     forceUpdate: true,
   }),
 });
 
-// Container for browser automation
-// Alchemy needs CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN in environment
-// for container registry authentication
-const browserContainer = await Container("ralph-container-v2", {
+const browserContainer = await Container(`${project}-container`, {
   className: "RalphContainer",
   adopt: false,
   build: {
@@ -46,10 +25,7 @@ const browserContainer = await Container("ralph-container-v2", {
   },
 });
 
-// Worker that handles extraction requests
-// Note: Rate limiting currently uses in-memory Map (see src/index.ts)
-// KV namespace can be added later when needed for distributed rate limiting
-const worker = await Worker("ralphwiggums-api", {
+const worker = await Worker(`${project}-api`, {
   domains: ["ralphwiggums-api.coey.dev"],
   entrypoint: "./src/worker.ts",
   adopt: true,
@@ -62,8 +38,7 @@ const worker = await Worker("ralphwiggums-api", {
   compatibilityFlags: ["nodejs_compat"],
 });
 
-// SvelteKit demo app
-export const DEMO = await SvelteKit("ralphwiggums-demo", {
+export const DEMO = await SvelteKit(`${project}-demo`, {
   domains: ["ralphwiggums.coey.dev"],
   bindings: {
     WORKER: worker,
@@ -73,6 +48,6 @@ export const DEMO = await SvelteKit("ralphwiggums-demo", {
   adopt: true,
 });
 
-console.log({ url: DEMO.url });
+console.info({ url: DEMO.url });
 
 await app.finalize();

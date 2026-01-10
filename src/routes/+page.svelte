@@ -1,4 +1,7 @@
 <script lang="ts">
+  // @ts-expect-error - Vite handles the import
+  import { version } from "$lib/version";
+
   let url = $state("https://amazon.com/dp/B09V3KXJPB");
   let taskType = $state("extract");
   let instructions = $state(
@@ -95,6 +98,29 @@ console.log(result.data);`;
       parseFloat(doCost)
     ).toFixed(2)
   );
+
+  const heroImages = [
+    "/hero.jpg",
+    "/install.jpg",
+    "/build.jpg",
+    "/loop.jpg",
+    "/orchestration.jpg",
+    "/containment.jpg",
+    "/overnight.jpg",
+    "/garbage.jpg",
+    "/new-ralph.jpg",
+    "/fresh.jpg",
+    "/iterate.jpg",
+    "/sell.jpg",
+  ];
+  let currentImageIndex = $state(0);
+
+  $effect(() => {
+    const interval = setInterval(() => {
+      currentImageIndex = (currentImageIndex + 1) % heroImages.length;
+    }, 3000);
+    return () => clearInterval(interval);
+  });
 </script>
 
 <svelte:head>
@@ -133,7 +159,7 @@ console.log(result.data);`;
       <div
         class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-800 border border-slate-700 rounded text-[11px] text-slate-400 before:content-[''] before:w-1.5 before:h-1.5 before:bg-green-500 before:rounded-full"
       >
-        v0.0.1
+        v{version}
       </div>
     </div>
 
@@ -269,12 +295,24 @@ console.log(result.data);`;
           Browser Automation
         </div>
 
-        <div class="mb-8 animate-fade-in-up">
-          <img
-            src="/hero.jpg"
-            alt="Ralph Wiggum on a slide - CAUTION: ITERATION IN PROGRESS"
-            class="max-w-full w-[560px] h-auto rounded-lg border border-slate-700 shadow-lg"
-          />
+        <div class="mb-8 animate-fade-in-up relative w-[560px]">
+          <div
+            class="relative rounded-lg border border-slate-700 shadow-lg overflow-hidden"
+            style="width: 560px; height: 315px;"
+          >
+            {#each heroImages as img, index}
+              <div
+                class="absolute inset-0 transition-opacity duration-1000"
+                style="opacity: {index === currentImageIndex ? 1 : 0};"
+              >
+                <img
+                  src={img}
+                  alt="Ralph Wiggum slideshow"
+                  style="width: 100%; height: 100%; object-fit: cover; object-position: center;"
+                />
+              </div>
+            {/each}
+          </div>
         </div>
 
         <h1
@@ -331,14 +369,6 @@ console.log(result.data);`;
           </p>
         </div>
 
-        <div class="mb-8">
-          <img
-            src="/install.jpg"
-            alt="Ralph installing software"
-            class="max-w-full w-full lg:w-[600px] h-auto rounded-lg border border-slate-700 shadow-lg"
-          />
-        </div>
-
         <div
           class="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden"
         >
@@ -378,14 +408,6 @@ console.log(result.data);`;
             <div class="mb-1 text-green-500">✓ Ready to automate</div>
           </div>
         </div>
-
-        <div class="mt-8">
-          <img
-            src="/build.jpg"
-            alt="Building and deploying"
-            class="max-w-full w-full lg:w-[600px] h-auto rounded-lg border border-slate-700 shadow-lg"
-          />
-        </div>
       </section>
 
       <!-- How It Works -->
@@ -402,14 +424,6 @@ console.log(result.data);`;
           <p class="text-base text-slate-400 max-w-[480px]">
             Context engineering as a high-leverage activity.
           </p>
-        </div>
-
-        <div class="mb-8">
-          <img
-            src="/loop.jpg"
-            alt="Ralph in a loop"
-            class="max-w-full w-full lg:w-[600px] h-auto rounded-lg border border-slate-700 shadow-lg"
-          />
         </div>
 
         <div class="grid gap-6 mt-12">
@@ -433,11 +447,6 @@ console.log(result.data);`;
                 </p>
               </div>
             </div>
-            <img
-              src="/orchestration.jpg"
-              alt="Orchestrating agent actions"
-              class="w-full h-auto rounded-md border border-slate-700"
-            />
           </div>
 
           <div
@@ -460,11 +469,6 @@ console.log(result.data);`;
                 </p>
               </div>
             </div>
-            <img
-              src="/containment.jpg"
-              alt="Task containment and isolation"
-              class="w-full h-auto rounded-md border border-slate-700"
-            />
           </div>
 
           <div
@@ -486,11 +490,6 @@ console.log(result.data);`;
                 </p>
               </div>
             </div>
-            <img
-              src="/overnight.jpg"
-              alt="Running overnight"
-              class="w-full h-auto rounded-md border border-slate-700"
-            />
           </div>
         </div>
       </section>
@@ -550,14 +549,6 @@ console.log(result.data);`;
           <p class="text-base text-slate-400 max-w-[480px]">
             Dumb things can work surprisingly well. This is the smart version.
           </p>
-        </div>
-
-        <div class="mb-8">
-          <img
-            src="/garbage.jpg"
-            alt="Ralph as zen master"
-            class="max-w-full w-full lg:w-[600px] h-auto rounded-lg border border-slate-700 shadow-lg"
-          />
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -667,14 +658,6 @@ console.log(result.data);`;
           <p class="text-base text-slate-400 max-w-[480px]">
             See ralphwiggums extract data from any website.
           </p>
-        </div>
-
-        <div class="mb-8">
-          <img
-            src="/new-ralph.jpg"
-            alt="Ralph at computer"
-            class="max-w-full w-full lg:w-[600px] h-auto rounded-lg border border-slate-700 shadow-lg"
-          />
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -811,14 +794,6 @@ console.log(result.data);`;
           <p class="text-base text-slate-400 max-w-[480px]">
             Simple code. Persistent loops. Reliable results.
           </p>
-        </div>
-
-        <div class="mb-8">
-          <img
-            src="/orchestration.jpg"
-            alt="Ralph extracting data"
-            class="max-w-full w-full lg:w-[600px] h-auto rounded-lg border border-slate-700 shadow-lg"
-          />
         </div>
 
         <div

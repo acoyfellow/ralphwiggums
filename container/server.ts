@@ -78,26 +78,27 @@ let browserFactory: () => Stagehand = () => {
     }
 
     case "zen":
-    default: {
-      const apiKey = process.env.ANTHROPIC_API_KEY;
-      if (!apiKey) {
-        throw new Error("ANTHROPIC_API_KEY required when AI_PROVIDER=zen. " +
-          "OpenCode Zen uses Anthropic's API. Get your key from https://console.anthropic.com/ (must start with 'sk-ant-').");
+      default: {
+        const apiKey = process.env.ANTHROPIC_API_KEY || process.env.ZEN_API_KEY;
+        if (!apiKey) {
+          throw new Error("ANTHROPIC_API_KEY or ZEN_API_KEY required when AI_PROVIDER=zen. " +
+            "OpenCode Zen uses Anthropic's API. Get your key from https://console.anthropic.com/ (must start with 'sk-ant-').");
+        }
+        // Verify it's an Anthropic-style key
+        if (!apiKey.startsWith("sk-ant-")) {
+          throw new Error("Invalid API key format. Anthropic keys must start with 'sk-ant-'. " +
+            "Get a key from https://console.anthropic.com/");
+        }
+        return new Stagehand({
+          env: "LOCAL",
+          apiKey,
+          model: process.env.ZEN_MODEL || "claude-3-5-sonnet-latest",
+          localBrowserLaunchOptions: {
+            headless: true,
+            viewport: { width: 1280, height: 720 },
+          },
+        } as any);
       }
-      // Verify it's an Anthropic-style key
-      if (!apiKey.startsWith("sk-ant-")) {
-        throw new Error("Invalid API key format. Anthropic keys must start with 'sk-ant-'. " +
-          "Get a key from https://console.anthropic.com/");
-      }
-      return new Stagehand({
-        env: "LOCAL",
-        model: process.env.ZEN_MODEL || "claude-3-5-sonnet-latest",
-        localBrowserLaunchOptions: {
-          headless: true,
-          viewport: { width: 1280, height: 720 },
-        },
-      } as any);
-    }
   }
 };
 
