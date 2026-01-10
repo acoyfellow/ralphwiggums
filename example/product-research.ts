@@ -137,24 +137,25 @@ export async function getReviewSummary(productUrl: string) {
 }
 
 // ============================================================================
-// Main: Run Example
+// Usage Examples
 // ============================================================================
 
-async function main() {
-  console.log("RalphWiggums Example: Product Research & Comparison\n");
-  console.log("This example demonstrates how to automate product research.");
-  console.log("Use cases:");
-  console.log("  • Extract product specs and pricing");
-  console.log("  • Compare features across competitors");
-  console.log("  • Find cheapest prices across retailers");
-  console.log("  • Summarize customer reviews\n");
+/*
+This example demonstrates how to automate product research with use cases:
+• Extract product specs and pricing
+• Compare features across competitors
+• Find cheapest prices across retailers
+• Summarize customer reviews
 
-  console.log("Usage:");
-  console.log("  import { extractProductDetails, compareProducts } from './example/product-research.js'");
-  console.log("  const result = await extractProductDetails('https://example.com/product');");
-  console.log("  console.log(result.data); // { name: '...', price: '...', ... }\n");
+Usage:
+import { extractProductDetails, compareProducts } from "ralphwiggums/example/product-research";
+const result = await extractProductDetails("https://example.com/product");
+// result.data contains { name: "...", price: "...", ... }
 
-  console.log("See README.md for full documentation.");
+Example API call:
+POST /api/product-research
+{
+  "url": "https://example.com/product",
+  "instructions": "name, price, description"
 }
-
-main().catch(console.error);
+*/

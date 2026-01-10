@@ -65,19 +65,19 @@ export async function fillFormWithProgress(url: string, data: Record<string, str
 }
 
 // ============================================================================
-// Main: Run Example
+// Usage Examples
 // ============================================================================
 
-async function main() {
-  console.log("RalphWiggums Example: Contact Form Automation\n");
-  console.log("This example demonstrates how to automate form filling.");
-  console.log("Note: Requires Cloudflare Workers with Container binding.\n");
+/*
+To run this example:
+1. Deploy ralphwiggums to Cloudflare Workers
+2. Set up a Container binding
+3. Call the /do endpoint with your task
 
-  console.log("To run this example:");
-  console.log("1. Deploy ralphwiggums to Cloudflare Workers");
-  console.log("2. Set up a Container binding");
-  console.log("3. Call the /do endpoint with your task");
-  console.log("\nSee README.md for full documentation.");
+Example API call:
+POST /api/contact-form
+{
+  "url": "https://example.com/contact",
+  "data": { "name": "John Doe", "email": "john@example.com", "message": "Hello!" }
 }
-
-main().catch(console.error);
+*/
