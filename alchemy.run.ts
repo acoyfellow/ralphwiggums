@@ -1,7 +1,7 @@
 /// <reference types="@types/node" />
 
 import alchemy from "alchemy";
-import { SvelteKit, Worker, Container, DurableObject } from "alchemy/cloudflare";
+import { Worker, Container, DurableObjectNamespace } from "alchemy/cloudflare";
 import { CloudflareStateStore } from "alchemy/state";
 
 const project = "ralphwiggums";
@@ -10,7 +10,7 @@ const app = await alchemy(project, {
   password: process.env.ALCHEMY_PASSWORD || "abc123",
   stateStore: (scope) => new CloudflareStateStore(scope, {
     scriptName: `${project}-state`,
-    stateToken: alchemy.secret(process.env.ALCHEMY_STATE_TOKEN || ""),
+    stateToken: process.env.ALCHEMY_STATE_TOKEN || "",
     // forceUpdate: true,
   }),
 });
@@ -25,7 +25,8 @@ const browserContainer = await Container(`${project}-container`, {
   },
 });
 
-const orchestratorDO = await DurableObject(`${project}-orchestrator`, {
+// Create orchestrator Durable Object
+const orchestratorDO = await DurableObjectNamespace(`${project}-orchestrator`, {
   className: "OrchestratorDO",
   entrypoint: "./src/orchestrator/orchestrator-do.ts",
   adopt: false,
@@ -38,14 +39,14 @@ const worker = await Worker(`${project}-api`, {
   bindings: {
     CONTAINER: browserContainer,
     ORCHESTRATOR: orchestratorDO,
-    RALPH_API_KEY: alchemy.secret(process.env.RALPH_API_KEY ?? ""),
+    RALPH_API_KEY: process.env.RALPH_API_KEY ?? "",
     CONTAINER_URL: process.env.CONTAINER_URL ?? "http://localhost:8081",
   },
   url: false,
   compatibilityFlags: ["nodejs_compat"],
 });
 
-export const DEMO = await SvelteKit(`${project}-demo`, {
+export const DEMO = await alchemy.svelteKit(`${project}-demo`, {
   domains: ["ralphwiggums.coey.dev"],
   bindings: {
     WORKER: worker,

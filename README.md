@@ -35,12 +35,18 @@ console.log(result);
 
 ## Architecture
 
-ralphwiggums uses a **two-terminal setup** for local development:
+ralphwiggums uses a **three-tier architecture** for scalable browser automation:
 
-- **Container Server** (port 8081): Runs Stagehand for browser automation
-- **Worker**: API endpoints that call the container
+- **Orchestrator DO** (Durable Object): Manages task scheduling, persistence, and session state using ironalarm
+- **Container Server** (port 8081): Manages browser pool and executes individual automation tasks
+- **Worker/API**: REST endpoints for queueing tasks and monitoring status
 
-**Why two terminals?** Browser automation requires headless Chrome. The worker can't run browsers directly, so they communicate via HTTP.
+**Why this architecture?**
+- **Orchestrator**: Handles persistence, retries, and concurrent task management
+- **Container**: Owns browser lifecycle and resource management
+- **Worker**: Provides HTTP API interface to the orchestrator
+
+This separation enables reliable, resumable browser automation with proper resource management.
 
 ## AI Provider
 
@@ -343,19 +349,47 @@ See `alchemy.run.ts` for infrastructure configuration.
 
 ## Package Exports
 
-ralphwiggums provides two exports:
+ralphwiggums provides multiple exports for different use cases:
 
-1. **Main export** (most common):
+1. **Main export** (direct API usage):
    ```typescript
    import { run, doThis, createHandlers } from "ralphwiggums";
    ```
 
-2. **Checkpoint Durable Object** (production deployments):
+2. **Orchestrator components** (advanced usage):
+   ```typescript
+   import { OrchestratorDO, createPool, dispatchTasks } from "ralphwiggums";
+   ```
+
+3. **Checkpoint Durable Object** (production deployments):
    ```typescript
    import { CheckpointDO } from "ralphwiggums/checkpoint-do";
    ```
-   
-   Use `checkpoint-do` when deploying with Durable Objects for persistent checkpoint storage across multiple worker instances.
+
+## Orchestrator API
+
+For advanced usage with the orchestrator:
+
+```typescript
+// Queue a task
+const response = await fetch('/orchestrator/queue', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    prompt: "Go to example.com and extract the title",
+    maxIterations: 5
+  })
+});
+
+// Check task status
+const status = await fetch(`/orchestrator/tasks/${taskId}`);
+
+// List all tasks
+const tasks = await fetch('/orchestrator/tasks');
+
+// Get pool status
+const pool = await fetch('/orchestrator/pool');
+```
 
 ## Documentation
 

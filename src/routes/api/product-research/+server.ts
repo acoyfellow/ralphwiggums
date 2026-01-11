@@ -13,7 +13,7 @@ interface WorkerResponse {
   error?: string;
 }
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, platform }) => {
   try {
     const body = await request.json() as ProductResearchRequest;
     const { url, instructions } = body;
@@ -22,11 +22,11 @@ export const POST: RequestHandler = async ({ request }) => {
       return json({ success: false, message: 'URL is required' }, { status: 400 });
     }
 
-    const dev = process.env.NODE_ENV === 'development';
-    const containerUrl = dev ? 'http://localhost:8081' : 'http://worker';
+    // Use worker binding to go through orchestrator instead of direct container call
+    const workerUrl = `${platform?.env?.WORKER?.url || 'http://worker'}/do`;
 
-    // Call container /do endpoint directly
-    const containerResponse = await fetch(`${containerUrl}/do`, {
+    // Call worker /do endpoint (which will use orchestrator)
+    const workerResponse = await platform!.env!.WORKER.fetch(new Request(workerUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -34,22 +34,22 @@ export const POST: RequestHandler = async ({ request }) => {
         maxIterations: 5,
         timeout: 60000
       })
-    });
+    }));
 
-    const result = await containerResponse.json();
+    const result = await workerResponse.json();
 
     if (!result.success) {
       return json({
         success: false,
-        message: result.message || result.error || 'Container automation failed'
-      }, { status: containerResponse.status });
+        message: result.message || result.error || 'Automation failed'
+      }, { status: workerResponse.status });
     }
 
     return json({
       success: true,
       data: result.data,
       iterations: result.iterations || 0,
-      message: 'Task completed successfully'
+      message: 'Task completed successfully via orchestrator'
     });
 
   } catch (error) {

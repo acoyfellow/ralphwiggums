@@ -2,6 +2,9 @@
  * ralphwiggums - Orchestrator Types
  *
  * Effect-first browser automation orchestrator with ironalarm integration.
+ * Defines types for task scheduling, browser automation, and durable object state.
+ *
+ * ARCHITECTURE: Container manages browser lifecycle, orchestrator manages scheduling.
  */
 import { Effect, Data, Context } from "effect";
 // ============================================================================
@@ -15,48 +18,38 @@ export class PoolError extends Data.TaggedError("PoolError") {
 }
 export class DispatcherError extends Data.TaggedError("DispatcherError") {
 }
+export class SessionError extends Data.TaggedError("SessionError") {
+}
 // ============================================================================
-// Scheduler Context (ironalarm integration)
+// Scheduler Service (ironalarm integration)
 // ============================================================================
-/**
- * Effect context for accessing scheduler operations.
- * All ironalarm methods return Promise, so we wrap with Effect.
- */
 export class SchedulerService {
     scheduler;
     constructor(scheduler) {
         this.scheduler = scheduler;
     }
     schedule(at, taskId, taskName, params, options) {
-        // ironalarm APIs return Effect, so just delegate
         return this.scheduler.schedule(at, taskId, taskName, params, options);
     }
     runNow(taskId, taskName, params, options) {
-        // ironalarm APIs return Effect, so just delegate
         return this.scheduler.runNow(taskId, taskName, params, options);
     }
     checkpoint(taskId, key, value) {
-        // ironalarm APIs return Effect, so just delegate
         return this.scheduler.checkpoint(taskId, key, value);
     }
     getCheckpoint(taskId, key) {
-        // ironalarm APIs return Effect, so just delegate
         return this.scheduler.getCheckpoint(taskId, key);
     }
     getTask(taskId) {
-        // ironalarm APIs return Effect, so just delegate
         return this.scheduler.getTask(taskId);
     }
     getTasks(status) {
-        // ironalarm APIs return Effect, so just delegate
         return this.scheduler.getTasks(status);
     }
     cancelTask(taskId) {
-        // ironalarm APIs return Effect, so just delegate
         return this.scheduler.cancelTask(taskId);
     }
     alarm() {
-        // ironalarm APIs return Effect, so just delegate
         return this.scheduler.alarm();
     }
     register(taskName, handler) {

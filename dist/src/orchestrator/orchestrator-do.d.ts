@@ -2,13 +2,17 @@
  * ralphwiggums - Orchestrator Durable Object
  *
  * Effect-first browser automation orchestrator using ironalarm.
- * Manages task scheduling, browser pool, and session state persistence.
+ * Manages task scheduling and session state persistence via checkpoints.
+ *
+ * ARCHITECTURE DECISION: Container owns browser lifecycle
+ * - Container: Manages browser pool, creation/acquisition/release via /do endpoint
+ * - Orchestrator: Manages task scheduling, persistence, and calls container for execution
  *
  * ITERATION CONTROL OWNERSHIP:
- * - Container: Executes single prompt with configurable maxIterations
- * - Orchestrator: Manages overall task lifecycle, checkpoints, and decides when to retry vs complete
+ * - Container: Executes single attempt (no internal iterations)
+ * - Orchestrator: Manages iterations via checkpoint/resume, decides when to retry vs complete
  *
- * This separation prevents dual iteration logic and enables external checkpointing.
+ * This enables external persistence and prevents dual iteration logic.
  */
 import type { DurableObject, DurableObjectState, Request } from "@cloudflare/workers-types";
 import type { BrowserAutomationParams } from "./types.js";

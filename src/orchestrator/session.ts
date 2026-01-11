@@ -1,100 +1,150 @@
 /**
- * ralphwiggums - Session State Management
+ * Session State Management for Orchestrator
  *
- * Manages task execution state, iterations, and checkpoints for orchestrator.
- * Provides clear separation between container (single prompt execution) and
- * orchestrator (multi-iteration task lifecycle).
+ * Manages task execution state, iterations, and checkpoints for resumable browser automation.
+ * Uses ironalarm SchedulerService for persistence.
  */
 
 import { Effect } from "effect";
-import type { SessionState, OrchestratorError } from "./types.js";
-import { SchedulerServiceTag } from "./types.js";
+import type { SessionState, SchedulerService } from "./types.js";
+import { SessionError, SchedulerServiceTag } from "./types.js";
 
 /**
- * Create initial session state for a task
+ * Update session iteration count
  */
-export function createSessionState(taskId: string, prompt: string, maxIterations: number): SessionState {
-  return {
-    taskId,
-    iteration: 0,
-    prompt,
-    completionPromise: "TASK_COMPLETE", // Default promise text
-    maxIterations,
-    completed: false,
-  };
+/**
+ * Update session iteration count
+ */
+export function incrementSessionIteration(
+  taskId: string,
+  scheduler: SchedulerService
+): Effect.Effect<SessionState | null, SessionError, never> {
+  return Effect.gen(function* () {
+    const currentState = yield* loadSessionState(taskId, scheduler);
+
+    if (!currentState) {
+      return null;
+    }
+
+    const updatedState: SessionState = {
+      ...currentState,
+      iteration: currentState.iteration + 1,
+      lastUpdated: Date.now(),
+    };
+
+    yield* saveSessionState(taskId, updatedState, scheduler);
+    return updatedState;
+  });
 }
 
 /**
- * Update session state after an iteration
+ * Mark session as completed with promise tag
  */
-export function updateSessionState(
-  state: SessionState,
-  iteration: number,
-  result: string,
-  promiseCompleted: boolean
-): SessionState {
-  return {
-    ...state,
-    iteration,
-    completed: promiseCompleted,
-  };
+/**
+ * Mark session as completed with promise tag
+ */
+export function completeSessionWithPromise(
+  taskId: string,
+  promiseText: string,
+  scheduler: SchedulerService
+): Effect.Effect<void, SessionError, never> {
+  return Effect.gen(function* () {
+    const currentState = yield* loadSessionState(taskId, scheduler);
+
+    if (!currentState) {
+      return;
+    }
+
+    const completedState: SessionState = {
+      ...currentState,
+      completionPromise: promiseText,
+      completed: true,
+      lastUpdated: Date.now(),
+    };
+
+    yield* saveSessionState(taskId, completedState, scheduler);
+  });
 }
 
 /**
- * Check if task should continue iterating
+ * Check if session should continue (hasn't exceeded max iterations)
  */
-export function shouldContinueIteration(state: SessionState): boolean {
+/**
+ * Check if session should continue (hasn't exceeded max iterations)
+ */
+export function shouldContinueSession(
+  state: SessionState
+): boolean {
   return !state.completed && state.iteration < state.maxIterations;
 }
 
 /**
- * Get next iteration number
+ * Check if session is completed (has promise tag)
  */
-export function getNextIteration(state: SessionState): number {
-  return state.iteration + 1;
+/**
+ * Check if session is completed (has promise tag)
+ */
+export function isSessionCompleted(
+  state: SessionState
+): boolean {
+  return !!state.completionPromise && !!state.completed;
 }
 
 /**
  * Save session state to checkpoint
  */
-export function saveSessionState(taskId: string, state: SessionState) {
+/**
+ * Save session state using ironalarm checkpoints
+ */
+/**
+ * Save session state using ironalarm checkpoints
+ */
+export function saveSessionState(
+  taskId: string,
+  state: SessionState,
+  scheduler: SchedulerService
+): Effect.Effect<void, SessionError, never> {
   return Effect.gen(function* () {
-    const svc = yield* SchedulerServiceTag;
-
-    // Save key session state for resume capability
-    yield* svc.checkpoint(taskId, "session_state", state);
-    yield* svc.checkpoint(taskId, "iteration", state.iteration);
-    yield* svc.checkpoint(taskId, "completed", state.completed);
-  });
+    yield* scheduler.checkpoint(taskId, "session", state);
+  }).pipe(
+    Effect.mapError(() => new SessionError({
+      reason: "Failed to save session state",
+      taskId
+    }))
+  );
 }
 
 /**
  * Load session state from checkpoint
  */
-export function loadSessionState(taskId: string) {
+/**
+ * Load session state from ironalarm checkpoints
+ */
+/**
+ * Load session state from ironalarm checkpoints
+ */
+export function loadSessionState(
+  taskId: string,
+  scheduler: SchedulerService
+): Effect.Effect<SessionState | null, SessionError, never> {
   return Effect.gen(function* () {
-    const svc = yield* SchedulerServiceTag;
+    const state = yield* scheduler.getCheckpoint(taskId, "session");
 
-    const state = yield* svc.getCheckpoint(taskId, "session_state");
-    if (state && typeof state === "object") {
+    if (!state) {
+      return null;
+    }
+
+    // Validate the loaded state structure
+    if (typeof state === 'object' && state !== null &&
+        'taskId' in state && 'iteration' in state && 'prompt' in state) {
       return state as SessionState;
     }
 
-    // Fallback: try to reconstruct from individual fields
-    const iteration = yield* svc.getCheckpoint(taskId, "iteration");
-    const completed = yield* svc.getCheckpoint(taskId, "completed");
-
-    if (typeof iteration === "number" && typeof completed === "boolean") {
-      return {
-        taskId,
-        iteration: iteration as number,
-        prompt: "", // Would need to be stored separately
-        completionPromise: "TASK_COMPLETE",
-        maxIterations: 10, // Default
-        completed: completed as boolean,
-      };
-    }
-
     return null;
-  });
+  }).pipe(
+    Effect.mapError(() => new SessionError({
+      reason: "Failed to load session state",
+      taskId
+    }))
+  );
 }

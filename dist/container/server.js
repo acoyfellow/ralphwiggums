@@ -11,7 +11,7 @@ import { z } from "zod";
 // ============================================================================
 // Types & Constants
 // ============================================================================
-// Promise tag detection regex
+// Promise tag detection regex (used by orchestrator for completion detection)
 const PROMISE_TAG_REGEX = /<promise>(.*?)<\/promise>/gi;
 // Global browser pool for persistent browser management
 const browserPool = new Map();

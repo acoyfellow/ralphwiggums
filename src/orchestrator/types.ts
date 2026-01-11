@@ -2,36 +2,14 @@
  * ralphwiggums - Orchestrator Types
  *
  * Effect-first browser automation orchestrator with ironalarm integration.
+ * Defines types for task scheduling, browser automation, and durable object state.
+ *
+ * ARCHITECTURE: Container manages browser lifecycle, orchestrator manages scheduling.
  */
 
 import { Effect, Data, Context } from "effect";
 import type { ReliableScheduler, Task, TaskHandler } from "ironalarm";
 import type { DurableObjectState, DurableObjectStorage } from "@cloudflare/workers-types";
-
-// ============================================================================
-// Errors
-// ============================================================================
-
-export class OrchestratorError extends Data.TaggedError("OrchestratorError")<{
-  reason: string;
-  taskId?: string;
-}> {}
-
-export class BrowserAutomationError extends Data.TaggedError("BrowserAutomationError")<{
-  taskId: string;
-  reason: string;
-  stage: "navigation" | "action" | "extraction" | "checkpoint";
-}> {}
-
-export class PoolError extends Data.TaggedError("PoolError")<{
-  reason: string;
-  browserId?: string;
-}> {}
-
-export class DispatcherError extends Data.TaggedError("DispatcherError")<{
-  reason: string;
-  taskId?: string;
-}> {}
 
 // ============================================================================
 // Task Types
@@ -83,19 +61,49 @@ export interface BrowserPool {
 }
 
 // ============================================================================
-// Session Types (for promise tag detection)
+// Session Types
 // ============================================================================
 
 export interface SessionState {
   taskId: string;
   iteration: number;
   prompt: string;
-  completionPromise: string;
-  maxIterations: number;
+  completionPromise?: string;
   checkpointId?: string;
-  completed: boolean;
-  url?: string;
+  lastUpdated: number;
+  maxIterations: number;
+  completed?: boolean;
 }
+
+// ============================================================================
+// Errors
+// ============================================================================
+
+export class OrchestratorError extends Data.TaggedError("OrchestratorError")<{
+  reason: string;
+  taskId?: string;
+}> {}
+
+export class BrowserAutomationError extends Data.TaggedError("BrowserAutomationError")<{
+  taskId: string;
+  reason: string;
+  stage: "navigation" | "action" | "extraction" | "checkpoint";
+}> {}
+
+export class PoolError extends Data.TaggedError("PoolError")<{
+  reason: string;
+  browserId?: string;
+}> {}
+
+export class DispatcherError extends Data.TaggedError("DispatcherError")<{
+  reason: string;
+  taskId?: string;
+}> {}
+
+export class SessionError extends Data.TaggedError("SessionError")<{
+  reason: string;
+  taskId: string;
+}> {}
 
 // ============================================================================
 // Handler Types
@@ -107,17 +115,11 @@ export type BrowserAutomationHandler = (
 ) => Effect.Effect<void, BrowserAutomationError, never>;
 
 // ============================================================================
-// Scheduler Context (ironalarm integration)
+// Scheduler Service (ironalarm integration)
 // ============================================================================
 
-/**
- * Effect context for accessing scheduler operations.
- * All ironalarm methods return Promise, so we wrap with Effect.
- */
 export class SchedulerService {
-  constructor(
-    readonly scheduler: ReliableScheduler
-  ) {}
+  constructor(readonly scheduler: ReliableScheduler) {}
 
   schedule(
     at: Date | number,
@@ -126,7 +128,6 @@ export class SchedulerService {
     params?: unknown,
     options?: { priority?: number }
   ): Effect.Effect<void, OrchestratorError> {
-    // ironalarm APIs return Effect, so just delegate
     return this.scheduler.schedule(at, taskId, taskName, params, options) as any;
   }
 
@@ -136,7 +137,6 @@ export class SchedulerService {
     params?: unknown,
     options?: { maxRetries?: number; priority?: number }
   ): Effect.Effect<void, OrchestratorError> {
-    // ironalarm APIs return Effect, so just delegate
     return this.scheduler.runNow(taskId, taskName, params, options) as any;
   }
 
@@ -145,7 +145,6 @@ export class SchedulerService {
     key: string,
     value: unknown
   ): Effect.Effect<void, OrchestratorError> {
-    // ironalarm APIs return Effect, so just delegate
     return this.scheduler.checkpoint(taskId, key, value) as any;
   }
 
@@ -153,27 +152,22 @@ export class SchedulerService {
     taskId: string,
     key: string
   ): Effect.Effect<unknown, OrchestratorError> {
-    // ironalarm APIs return Effect, so just delegate
     return this.scheduler.getCheckpoint(taskId, key) as any;
   }
 
   getTask(taskId: string): Effect.Effect<Task | undefined, OrchestratorError> {
-    // ironalarm APIs return Effect, so just delegate
     return this.scheduler.getTask(taskId) as any;
   }
 
   getTasks(status?: Task["status"]): Effect.Effect<Task[], OrchestratorError> {
-    // ironalarm APIs return Effect, so just delegate
     return this.scheduler.getTasks(status) as any;
   }
 
   cancelTask(taskId: string): Effect.Effect<boolean, OrchestratorError> {
-    // ironalarm APIs return Effect, so just delegate
     return this.scheduler.cancelTask(taskId) as any;
   }
 
   alarm(): Effect.Effect<void, OrchestratorError> {
-    // ironalarm APIs return Effect, so just delegate
     return this.scheduler.alarm() as any;
   }
 

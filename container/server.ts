@@ -14,7 +14,7 @@ import { z } from "zod";
 // Types & Constants
 // ============================================================================
 
-// Promise tag detection regex
+// Promise tag detection regex (used by orchestrator for completion detection)
 const PROMISE_TAG_REGEX = /<promise>(.*?)<\/promise>/gi;
 
 export interface StartRequest {
@@ -34,7 +34,7 @@ export interface ExtractRequest {
 export interface DoRequest {
   prompt: string;
   stream?: boolean; // Enable WebSocket streaming
-  maxIterations?: number; // Maximum iterations for ralph-loop (default: 3)
+   maxIterations?: number; // DEPRECATED: Orchestrator now controls iterations
 }
 
 // ============================================================================

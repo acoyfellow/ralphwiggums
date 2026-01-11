@@ -2,43 +2,13 @@
  * ralphwiggums - Orchestrator Types
  *
  * Effect-first browser automation orchestrator with ironalarm integration.
+ * Defines types for task scheduling, browser automation, and durable object state.
+ *
+ * ARCHITECTURE: Container manages browser lifecycle, orchestrator manages scheduling.
  */
 import { Effect, Context } from "effect";
 import type { ReliableScheduler, Task, TaskHandler } from "ironalarm";
 import type { DurableObjectStorage } from "@cloudflare/workers-types";
-declare const OrchestratorError_base: new <A extends Record<string, any> = {}>(args: import("effect/Types").Equals<A, {}> extends true ? void : { readonly [P in keyof A as P extends "_tag" ? never : P]: A[P]; }) => import("effect/Cause").YieldableError & {
-    readonly _tag: "OrchestratorError";
-} & Readonly<A>;
-export declare class OrchestratorError extends OrchestratorError_base<{
-    reason: string;
-    taskId?: string;
-}> {
-}
-declare const BrowserAutomationError_base: new <A extends Record<string, any> = {}>(args: import("effect/Types").Equals<A, {}> extends true ? void : { readonly [P in keyof A as P extends "_tag" ? never : P]: A[P]; }) => import("effect/Cause").YieldableError & {
-    readonly _tag: "BrowserAutomationError";
-} & Readonly<A>;
-export declare class BrowserAutomationError extends BrowserAutomationError_base<{
-    taskId: string;
-    reason: string;
-    stage: "navigation" | "action" | "extraction" | "checkpoint";
-}> {
-}
-declare const PoolError_base: new <A extends Record<string, any> = {}>(args: import("effect/Types").Equals<A, {}> extends true ? void : { readonly [P in keyof A as P extends "_tag" ? never : P]: A[P]; }) => import("effect/Cause").YieldableError & {
-    readonly _tag: "PoolError";
-} & Readonly<A>;
-export declare class PoolError extends PoolError_base<{
-    reason: string;
-    browserId?: string;
-}> {
-}
-declare const DispatcherError_base: new <A extends Record<string, any> = {}>(args: import("effect/Types").Equals<A, {}> extends true ? void : { readonly [P in keyof A as P extends "_tag" ? never : P]: A[P]; }) => import("effect/Cause").YieldableError & {
-    readonly _tag: "DispatcherError";
-} & Readonly<A>;
-export declare class DispatcherError extends DispatcherError_base<{
-    reason: string;
-    taskId?: string;
-}> {
-}
 export interface BrowserAutomationParams {
     prompt: string;
     maxIterations?: number;
@@ -74,17 +44,54 @@ export interface SessionState {
     taskId: string;
     iteration: number;
     prompt: string;
-    completionPromise: string;
-    maxIterations: number;
+    completionPromise?: string;
     checkpointId?: string;
-    completed: boolean;
-    url?: string;
+    lastUpdated: number;
+    maxIterations: number;
+    completed?: boolean;
+}
+declare const OrchestratorError_base: new <A extends Record<string, any> = {}>(args: import("effect/Types").Equals<A, {}> extends true ? void : { readonly [P in keyof A as P extends "_tag" ? never : P]: A[P]; }) => import("effect/Cause").YieldableError & {
+    readonly _tag: "OrchestratorError";
+} & Readonly<A>;
+export declare class OrchestratorError extends OrchestratorError_base<{
+    reason: string;
+    taskId?: string;
+}> {
+}
+declare const BrowserAutomationError_base: new <A extends Record<string, any> = {}>(args: import("effect/Types").Equals<A, {}> extends true ? void : { readonly [P in keyof A as P extends "_tag" ? never : P]: A[P]; }) => import("effect/Cause").YieldableError & {
+    readonly _tag: "BrowserAutomationError";
+} & Readonly<A>;
+export declare class BrowserAutomationError extends BrowserAutomationError_base<{
+    taskId: string;
+    reason: string;
+    stage: "navigation" | "action" | "extraction" | "checkpoint";
+}> {
+}
+declare const PoolError_base: new <A extends Record<string, any> = {}>(args: import("effect/Types").Equals<A, {}> extends true ? void : { readonly [P in keyof A as P extends "_tag" ? never : P]: A[P]; }) => import("effect/Cause").YieldableError & {
+    readonly _tag: "PoolError";
+} & Readonly<A>;
+export declare class PoolError extends PoolError_base<{
+    reason: string;
+    browserId?: string;
+}> {
+}
+declare const DispatcherError_base: new <A extends Record<string, any> = {}>(args: import("effect/Types").Equals<A, {}> extends true ? void : { readonly [P in keyof A as P extends "_tag" ? never : P]: A[P]; }) => import("effect/Cause").YieldableError & {
+    readonly _tag: "DispatcherError";
+} & Readonly<A>;
+export declare class DispatcherError extends DispatcherError_base<{
+    reason: string;
+    taskId?: string;
+}> {
+}
+declare const SessionError_base: new <A extends Record<string, any> = {}>(args: import("effect/Types").Equals<A, {}> extends true ? void : { readonly [P in keyof A as P extends "_tag" ? never : P]: A[P]; }) => import("effect/Cause").YieldableError & {
+    readonly _tag: "SessionError";
+} & Readonly<A>;
+export declare class SessionError extends SessionError_base<{
+    reason: string;
+    taskId: string;
+}> {
 }
 export type BrowserAutomationHandler = (taskId: string, params: BrowserAutomationParams) => Effect.Effect<void, BrowserAutomationError, never>;
-/**
- * Effect context for accessing scheduler operations.
- * All ironalarm methods return Promise, so we wrap with Effect.
- */
 export declare class SchedulerService {
     readonly scheduler: ReliableScheduler;
     constructor(scheduler: ReliableScheduler);
