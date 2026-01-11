@@ -8,18 +8,27 @@ echo "🔍 Validating YAML files..."
 YAML_FILES=$(find .github/workflows -name "*.yml" -o -name "*.yaml" 2>/dev/null)
 
 if [ -n "$YAML_FILES" ]; then
-    for file in $YAML_FILES; do
-        if command -v python3 &> /dev/null && python3 -c "import yaml" &> /dev/null; then
+    # Try Node.js YAML validation first (more reliable)
+    if command -v node &> /dev/null && node -e "require('yaml')" &> /dev/null; then
+        echo "Using Node.js YAML validation..."
+        if ! npm run --silent validate-yaml 2>/dev/null; then
+            echo "❌ YAML validation failed"
+            echo "Fix the YAML syntax before committing!"
+            exit 1
+        fi
+    # Fallback to Python validation
+    elif command -v python3 &> /dev/null && python3 -c "import yaml" &> /dev/null; then
+        for file in $YAML_FILES; do
             echo "Checking $file..."
             if ! python3 -c "import yaml; yaml.safe_load(open('$file'))" 2>/dev/null; then
                 echo "❌ YAML validation failed for $file"
                 echo "Fix the YAML syntax before committing!"
                 exit 1
             fi
-        else
-            echo "⚠️  Python3 or PyYAML not available - skipping YAML validation"
-        fi
-    done
+        done
+    else
+        echo "⚠️  Node.js/YAML or Python3/PyYAML not available - skipping YAML validation"
+    fi
     echo "✅ All YAML files valid"
 else
     echo "ℹ️  No YAML files found to validate"
