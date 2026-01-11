@@ -69,7 +69,7 @@
     "svelte-tiny-slider": "^2.4.1"
   },
   "devDependencies": {
-    "@browserbasehq/stagehand": "^3.0.7",
+    "@browserbasehq/stagehand": "^2.7.0",
     "@cloudflare/containers": "^0.0.31",
     "@cloudflare/kv-asset-handler": "^0.4.1",
     "@cloudflare/workers-types": "^4.20260109.0",

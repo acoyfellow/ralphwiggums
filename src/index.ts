@@ -538,10 +538,16 @@ async function containerFetch(
   if (containerUrl) {
     const url = `${containerUrl}${path}`;
     log(requestId, "debug", `Using local container: ${url}`);
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    // Pass ZEN_API_KEY via header for authentication
+    const zenApiKey = process.env.ZEN_API_KEY;
+    if (zenApiKey) {
+      headers["x-zen-api-key"] = zenApiKey;
+    }
     try {
       const res = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: body ? JSON.stringify(body) : undefined,
       });
 
@@ -564,12 +570,13 @@ async function containerFetch(
   // Check circuit breaker
   checkCircuitBreaker();
 
-  if (!_containerBinding) {
+  // Allow local dev mode without Cloudflare bindings
+  if (!_containerBinding && !containerUrl) {
     const error = new BrowserError({
-      reason: "Container binding not set - did you call setContainerBinding()?",
+      reason: "Container binding not set - did you call setContainerBinding() or setContainerUrl()?",
       requestId
     });
-    log(requestId, "error", "No container binding", { reason: error.reason });
+    log(requestId, "error", "No container binding or URL", { reason: error.reason });
     throw error;
   }
 

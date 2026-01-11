@@ -38,9 +38,15 @@ export const POST: RequestHandler = async ({ request, platform }) => {
     if (dev) {
       // Development: Direct HTTP call to container (bypasses worker)
       const containerUrl = platform?.env?.CONTAINER_URL || process.env.CONTAINER_URL || 'http://localhost:8081';
+      const zenApiKey = (platform?.env as any)?.ZEN_API_KEY as string | undefined || process.env.ZEN_API_KEY;
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      // Pass ZEN_API_KEY via header as fallback if container server doesn't have it in env
+      if (zenApiKey) {
+        headers['X-Zen-Api-Key'] = zenApiKey;
+      }
       workerResponse = await fetch(`${containerUrl}/do`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(requestBody)
       });
     } else {

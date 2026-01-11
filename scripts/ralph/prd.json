@@ -157,29 +157,30 @@
       "verification": "Frontend agent fixed submit button state management and spinner visibility",
       "completed_at": "2026-01-07T12:10:00Z"
     },
-    {
-      "id": "009",
-      "title": "Install ironalarm and create orchestrator DO foundation",
-      "status": "pending",
-      "priority": "P0",
-      "description": "Set up ironalarm v0.2.0 (Effect-based) and create OrchestratorDO class with ReliableScheduler integration. **All ironalarm APIs return Effect<T, E, SchedulerService> - MUST use Effect.runPromise() or Effect.gen for execution.**",
-      "acceptance_criteria": [
-        "ironalarm v0.2.0+ installed as dependency (bun add ironalarm)",
-        "src/orchestrator/orchestrator-do.ts created with OrchestratorDO class",
-        "ReliableScheduler initialized in constructor with state.storage",
-        "Browser automation handler registered: (taskId, params) => Effect.Effect<void, never, SchedulerService>",
-        "Handler uses Effect.gen and yields SchedulerService from context",
-        "alarm() method implemented: await Effect.runPromise(scheduler.alarm())",
-        "runNow() wrapped with Effect.runPromise() for async execution",
-        "OrchestratorDO extends DurableObject correctly",
-        "TypeScript compiles without errors",
-        "**NO raw promises, NO try/catch - Effect only, ironalarm APIs return Effect**"
-      ],
-      "dependencies": ["008"],
-      "new_files": ["src/orchestrator/orchestrator-do.ts", "src/orchestrator/types.ts"],
-      "files_to_modify": ["package.json", "alchemy.run.ts"],
-      "verification": "bun install succeeds, orchestrator-do.ts compiles, DO binding added to alchemy.run.ts, Effect.runPromise() used for all ironalarm calls, SchedulerService accessed via Effect context"
-    },
+     {
+       "id": "009",
+       "title": "Install ironalarm and create orchestrator DO foundation",
+       "status": "completed",
+       "priority": "P0",
+       "description": "Set up ironalarm v0.2.0 (Effect-based) and create OrchestratorDO class with ReliableScheduler integration. **All ironalarm APIs return Effect<T, E, SchedulerService> - MUST use Effect.runPromise() or Effect.gen for execution.**",
+       "acceptance_criteria": [
+         "ironalarm v0.2.0+ installed as dependency (bun add ironalarm)",
+         "src/orchestrator/orchestrator-do.ts created with OrchestratorDO class",
+         "ReliableScheduler initialized in constructor with state.storage",
+         "Browser automation handler registered: (taskId, params) => Effect.Effect<void, never, SchedulerService>",
+         "Handler uses Effect.gen and yields SchedulerService from context",
+         "alarm() method implemented: await Effect.runPromise(scheduler.alarm())",
+         "runNow() wrapped with Effect.runPromise() for async execution",
+         "OrchestratorDO extends DurableObject correctly",
+         "TypeScript compiles without errors",
+         "**NO raw promises, NO try/catch - Effect only, ironalarm APIs return Effect**"
+       ],
+       "dependencies": ["008"],
+       "new_files": ["src/orchestrator/orchestrator-do.ts", "src/orchestrator/types.ts"],
+       "files_to_modify": ["package.json", "alchemy.run.ts"],
+       "verification": "ironalarm v0.2.0+ was already installed in package.json. All orchestrator files existed with proper Effect-first implementation: OrchestratorDO extends DurableObject, ReliableScheduler initialized with state.storage, browser automation handler registered with Effect.Effect<void, never, SchedulerService>, alarm() and runNow() methods use Effect.runPromise(), DO binding exists in alchemy.run.ts, TypeScript compiles cleanly (orchestrator files pass)",
+       "completed_at": "2026-01-11T08:49:43Z"
+     },
     {
       "id": "009.1",
       "title": "Integrate demo UI with orchestrator for end-to-end testing",

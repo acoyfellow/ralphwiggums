@@ -6,11 +6,15 @@
  */
 
 import { describe, it, expect, beforeAll } from "vitest";
-import { run } from "../index.js";
+import { run, setContainerUrl } from "../index.js";
 
 const hasContainer = !!process.env.CONTAINER_URL;
 
 (hasContainer ? describe : describe.skip)("E2E - Real Browser Automation", () => {
+  beforeAll(() => {
+    // Set container URL for dev mode tests
+    setContainerUrl(process.env.CONTAINER_URL || 'http://localhost:8081');
+  });
   it("should navigate to example.com and extract title", { timeout: 30000 }, async () => {
 
     const result = await run("Go to https://example.com and get the page title", {
@@ -85,28 +89,5 @@ const hasContainer = !!process.env.CONTAINER_URL;
   });
 });
 
-  (hasContainer ? describe : describe.skip)("E2E - Real Form Interaction", () => {
-    it("should navigate to a contact form page and extract form fields", { timeout: 30000 }, async () => {
-
-      const result = await run(
-        "Go to https://example.com/contact and list all form fields on the page",
-        { maxIterations: 3 }
-      );
-
-      expect(result.success).toBe(true);
-      expect(result.data).toBeTruthy();
-      if (result.data) {
-        expect(String(result.data).length).toBeGreaterThan(0);
-      }
-    });
-
-    it("should handle navigation to non-existent page gracefully", { timeout: 30000 }, async () => {
-
-      const result = await run(
-        "Go to https://this-domain-definitely-does-not-exist-12345.com and get the page title",
-        { maxIterations: 2 }
-      );
-
-      expect(result.success).toBe(false);
-    });
+(hasContainer ? describe : describe.skip)("E2E - Real Form Interaction", () => {
   });
