@@ -37,6 +37,25 @@ console.log(result);
 
 ralphwiggums uses a **three-tier architecture** for scalable browser automation:
 
+```
+┌─────────────────────────────────────────────────────┐
+│ SvelteKit App (Demo UI)                             │
+│ src/routes/                                         │
+│   ├── +page.svelte          - Main landing page     │
+│   ├── +layout.svelte        - Layout with sidebar   │
+│   └── api/product-research/  - API endpoint         │
+├─────────────────────────────────────────────────────┤
+│ Worker (ralphwiggums-api)                           │
+│ src/worker.ts                                       │
+│   └── OrchestratorDO         - Task scheduling       │
+├─────────────────────────────────────────────────────┤
+│ Container (ralph-container)                         │
+│ container/server.ts                                 │
+│   └── Stagehand browser     - Real browser control  │
+└─────────────────────────────────────────────────────┘
+```
+
+**Component Responsibilities:**
 - **Orchestrator DO** (Durable Object): Manages task scheduling, persistence, and session state using ironalarm
 - **Container Server** (port 8081): Manages browser pool and executes individual automation tasks
 - **Worker/API**: REST endpoints for queueing tasks and monitoring status
@@ -213,6 +232,35 @@ Stop with `Ctrl+C` (stops both terminals).
 | "Container binding not set" | Container server isn't running. Start Terminal 1. |
 | ECONNREFUSED on port 8081 | Port in use. Kill existing: `lsof -ti:8081 | xargs kill` |
 | Browser won't start | Check `ZEN_API_KEY` is set in `.env` |
+| Port 8080 conflict | Alchemy dev uses port 8080. Container server uses 8081 by default. |
+| Docker containers accumulating | Clean up before deploy: `docker ps -a \| grep -E "ralph\|desktop-linux" \| awk '{print $1}' \| xargs -r docker rm -f && docker system prune -f` |
+
+#### Stagehand Extraction Behavior
+
+Understanding how Stagehand handles extraction is important for getting reliable results:
+
+- **`extract()` returns `{ extraction: "text" }`** - The response object has an `extraction` property, not `text`
+- **`act()` handles both actions AND extraction** - Stagehand v3's `act()` is "intelligent" - it can navigate, extract, and interact based on natural language
+- **Best approach**: Use `extract()` for extraction prompts
+- **Prompt format matters**: 
+  - ✅ Works: "Go to URL and get all visible text"
+  - ❌ Doesn't work: "Extract from URL: instructions"
+  - ✅ Fixed: Auto-transform "Extract from URL: instructions" → "Go to URL and instructions"
+- **Zod schema optional**: Pass `undefined` to `extract()` for raw text
+
+#### Docker Cleanup
+
+Before deploying, clean up old Docker containers to prevent memory issues:
+
+```bash
+# Clean up old containers from alchemy dev
+docker ps -a | grep -E "ralph|desktop-linux" | awk '{print $1}' | xargs -r docker rm -f
+
+# Prune Docker system to free memory
+docker system prune -f
+```
+
+Alchemy creates new Docker containers on each deploy. Old containers accumulate and fill up memory if not cleaned regularly.
 
 ## Usage
 

@@ -36,8 +36,26 @@ const orchestratorDO = await DurableObjectNamespace(`${project}-orchestrator`, {
   sqlite: true,
 });
 
+// Determine stage from environment (set by CI/CD or default to 'dev')
+const stage = process.env.STAGE || "dev";
+const isProd = stage === "prod";
+
+// For PR previews, use subdomain pattern: pr-{number}.api.coey.dev and pr-{number}.coey.dev
+// For prod (main branch), use fixed domains
+const apiDomain = isProd
+  ? "ralphwiggums-api.coey.dev"
+  : stage.startsWith("pr-")
+    ? `${stage}.api.coey.dev`
+    : undefined;
+
+const demoDomain = isProd
+  ? "ralphwiggums.coey.dev"
+  : stage.startsWith("pr-")
+    ? `${stage}.coey.dev`
+    : undefined;
+
 const worker = await Worker(`${project}-api`, {
-  domains: ["ralphwiggums-api.coey.dev"],
+  ...(apiDomain ? { domains: [apiDomain] } : {}),
   entrypoint: "./src/worker.ts",
   adopt: true,
   bindings: {
@@ -46,17 +64,19 @@ const worker = await Worker(`${project}-api`, {
     RALPH_API_KEY: process.env.RALPH_API_KEY ?? "",
     CONTAINER_URL: process.env.CONTAINER_URL ?? "http://localhost:8081",
   },
-  url: false,
+  // Use preview URL for non-prod stages if no domain is set
+  url: !isProd && !apiDomain,
   compatibilityFlags: ["nodejs_compat"],
 });
 
 export const DEMO = await SvelteKit(`${project}-demo`, {
-  domains: ["ralphwiggums.coey.dev"],
+  ...(demoDomain ? { domains: [demoDomain] } : {}),
   bindings: {
     WORKER: worker,
     CONTAINER_URL: process.env.CONTAINER_URL ?? "http://localhost:8081",
   },
-  url: true,
+  // Use preview URL for non-prod stages if no domain is set
+  url: !isProd && !demoDomain,
   adopt: true,
 });
 
