@@ -10,8 +10,10 @@
 
 import { createHandlers, setContainerBinding, setContainerUrl } from "./index.js";
 import { CheckpointDO } from "./checkpoint-do.js";
+import { OrchestratorDO } from "./orchestrator/orchestrator-do.js";
 
 export { CheckpointDO };
+export { OrchestratorDO };
 export { RalphContainer } from "../container/container.js";
 
 export default {

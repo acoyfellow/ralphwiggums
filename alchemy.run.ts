@@ -1,7 +1,7 @@
 /// <reference types="@types/node" />
 
 import alchemy from "alchemy";
-import { SvelteKit, Worker, Container, DurableObject } from "alchemy/cloudflare";
+import { SvelteKit, Worker, Container, DurableObjectNamespace } from "alchemy/cloudflare";
 import { CloudflareStateStore } from "alchemy/state";
 
 const project = "ralphwiggums";
@@ -25,10 +25,8 @@ const browserContainer = await Container(`${project}-container`, {
   },
 });
 
-const orchestratorDO = await DurableObject(`${project}-orchestrator`, {
+const orchestratorDO = await DurableObjectNamespace(`${project}-orchestrator`, {
   className: "OrchestratorDO",
-  entrypoint: "./src/orchestrator/orchestrator-do.ts",
-  adopt: false,
 });
 
 const worker = await Worker(`${project}-api`, {
