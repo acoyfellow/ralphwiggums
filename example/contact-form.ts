@@ -15,14 +15,17 @@ import type { RalphOptions } from "ralphwiggums";
 // ============================================================================
 
 export async function fillContactForm(url: string, data: { name: string; email: string; message: string }) {
+  // Type your options for better IDE autocomplete and type safety
+  const options: RalphOptions = {
+    maxIterations: 5,
+    timeout: 60000,
+  };
+
   const result = await run(`Fill out the contact form at ${url}:
     - Enter "${data.name}" in the name field
     - Enter "${data.email}" in the email field
     - Enter "${data.message}" in the message field
-    - Click the submit button`, {
-    maxIterations: 5,
-    timeout: 60000,
-  });
+    - Click the submit button`, options);
 
   return result;
 }
@@ -36,13 +39,14 @@ export async function completeMultiStepForm(url: string, formData: Record<string
     `Enter "${value}" in the ${field} field`
   ).join("\n");
 
+  // You can also type options inline or pass them directly
   const result = await run(`Complete the multi-step form at ${url}:
     ${steps}
     - Proceed through each step
     - Submit the form`, {
     maxIterations: 10,
     timeout: 120000,
-  });
+  } satisfies RalphOptions);
 
   return result;
 }

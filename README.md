@@ -12,7 +12,7 @@ console.log(result.data); // "Example Domain"
 ```
 
 ```bash
-npm install ralphwiggums
+bun install ralphwiggums
 ```
 
 Built with [Effect-TS](https://effect.website) for typed error handling and functional composition. Uses [Stagehand](https://docs.stagehand.dev/v3) for AI-powered browser automation.
@@ -142,7 +142,7 @@ try {
 
 ```bash
 # Install ralphwiggums and required Cloudflare peer dependencies
-npm install ralphwiggums @cloudflare/containers @cloudflare/workers-types
+bun install ralphwiggums @cloudflare/containers @cloudflare/workers-types
 ```
 
 **Note**: All examples work in TypeScript. Types are included in the package.
@@ -161,27 +161,146 @@ npm install ralphwiggums @cloudflare/containers @cloudflare/workers-types
 
 ## Quick Start
 
-1. **Install the package and Cloudflare dependencies:**
-   ```bash
-   npm install ralphwiggums @cloudflare/containers @cloudflare/workers-types
-   ```
+### Minimal Setup (3 steps)
 
-2. **Set up environment variables:**
-   ```bash
-   # Copy .env.example to .env
-   cp .env.example .env
+**1. Install:**
+```bash
+bun install ralphwiggums @cloudflare/containers @cloudflare/workers-types
+```
 
-   # Edit .env and set your ZEN_API_KEY
-   # ZEN_API_KEY=your_zen_api_key
-   ```
+**2. Set required environment variable:**
+```bash
+# Create .env file
+echo "ZEN_API_KEY=your_zen_api_key_here" > .env
+```
 
-3. **Run your first automation:**
-   ```typescript
-   import { run } from "ralphwiggums";
-   
-   const result = await run("Go to example.com and get the page title");
-   console.log(result.data); // "Example Domain"
-   ```
+Get your Zen API key: [Sign up for OpenCode Zen](https://opencode.zen.com) → Dashboard → API Keys (free tier available)
+
+**3. Run your first automation:**
+```typescript
+import { run } from "ralphwiggums";
+
+const result = await run("Go to example.com and get the page title");
+console.log(result.data); // "Example Domain"
+```
+
+That's it! The defaults work for most use cases.
+
+---
+
+### Complete Configuration
+
+**Required:**
+```bash
+ZEN_API_KEY=your_zen_api_key_here  # OpenCode Zen API key (get from zen.com dashboard)
+```
+
+**Optional - API Security:**
+```bash
+RALPH_API_KEY=your_api_key_here    # Protect your API with key authentication
+```
+
+**Optional - Performance Tuning:**
+```bash
+RALPH_MAX_CONCURRENT=5              # Max concurrent requests (default: 5)
+RALPH_REQUEST_TIMEOUT=300000         # Task timeout in ms (default: 300000 = 5 min)
+RALPH_MAX_PROMPT_LENGTH=10000        # Max prompt length (default: 10000)
+```
+
+**Optional - Debugging:**
+```bash
+RALPH_DEBUG=false                    # Enable verbose debug logs (default: false)
+```
+
+**Optional - Local Development:**
+```bash
+CONTAINER_URL=http://localhost:8081  # Container server URL (default: http://localhost:8081)
+```
+
+**Optional - AI Provider:**
+```bash
+AI_PROVIDER=zen                      # "zen" or "cloudflare" (default: zen)
+ZEN_MODEL=claude-sonnet-4-5-20250929 # Zen model (default: claude-sonnet-4-5-20250929)
+
+# Alternative: Cloudflare AI (requires all three)
+# CLOUDFLARE_ACCOUNT_ID=your_account_id
+# CLOUDFLARE_API_TOKEN=your_api_token
+# CLOUDFLARE_MODEL=your_model_name
+```
+
+**Optional - Deployment (Alchemy):**
+```bash
+ALCHEMY_PASSWORD=your_password       # Alchemy infrastructure password
+ALCHEMY_STATE_TOKEN=your_token       # Alchemy state token
+STAGE=prod                           # "prod", "dev", or "pr-{number}"
+```
+
+---
+
+### Usage Examples
+
+**In a Cloudflare Worker:**
+```typescript
+import { run } from "ralphwiggums";
+
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const result = await run("Go to example.com and get the page title");
+    return Response.json(result);
+  }
+};
+```
+
+**HTTP API:**
+```bash
+curl -X POST https://your-worker.workers.dev/do \
+  -H "Content-Type: application/json" \
+  -H "X-Api-Key: your_api_key" \
+  -d '{"prompt": "Go to example.com and get the page title"}'
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": "Example Domain",
+  "message": "Task completed successfully",
+  "iterations": 1
+}
+```
+
+---
+
+### Verify Setup
+
+**Local Development:**
+```bash
+# Terminal 1: Container server (browser automation)
+source .env
+PORT=8081 bun run --hot container/server.ts
+
+# Terminal 2: Dev server (API + demo UI)
+export CONTAINER_URL=http://localhost:8081
+bun run dev
+
+# Test container
+curl http://localhost:8081/health
+# Expected: {"status":"ok"}
+
+# Test worker
+curl http://localhost:5173/health
+# Expected: {"status":"healthy",...}
+```
+
+**Production:**
+```bash
+# Deploy
+bun run deploy
+
+# Verify
+curl https://your-worker.workers.dev/health
+# Expected: {"status":"healthy",...}
+```
 
 ## Local Development
 

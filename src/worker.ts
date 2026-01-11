@@ -8,7 +8,7 @@
  * - GET /health - Health check
  */
 
-import { createHandlers, setContainerBinding, setContainerUrl } from "./index.js";
+import { createHandlers, setContainerBinding, setContainerUrl, setZenApiKey } from "./index.js";
 import { CheckpointDO } from "./checkpoint-do.js";
 import { OrchestratorDO } from "./orchestrator/orchestrator-do.js";
 
@@ -24,6 +24,10 @@ export default {
       setContainerBinding(env.CONTAINER);
     } else {
       setContainerUrl("http://localhost:8081");
+    }
+
+    if (env.ZEN_API_KEY && typeof env.ZEN_API_KEY === "string") {
+      setZenApiKey(env.ZEN_API_KEY);
     }
 
     const app = createHandlers();

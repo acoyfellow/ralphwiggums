@@ -500,6 +500,7 @@ export function getActiveRequestCount(): number {
 let _containerBinding: any = null;
 let _containerFetch: ((path: string, body?: object) => Promise<any>) | null = null;
 let _containerUrl: string | null = null;  // For local dev override
+let _zenApiKey: string | null = null;
 
 export function setContainerBinding(binding: any) {
   _containerBinding = binding;
@@ -511,6 +512,10 @@ export function setContainerFetch(fetchFn: ((path: string, body?: object) => Pro
 
 export function setContainerUrl(url: string) {
   _containerUrl = url;
+}
+
+export function setZenApiKey(key: string) {
+  _zenApiKey = key;
 }
 
 function getContainerUrl(): string | null {
@@ -582,20 +587,25 @@ async function containerFetch(
     throw error;
   }
 
-  try {
-    const { getContainer, switchPort } = await import("@cloudflare/containers");
-    const container = getContainer(_containerBinding, crypto.randomUUID());
+    try {
+      const { getContainer, switchPort } = await import("@cloudflare/containers");
+      const container = getContainer(_containerBinding, crypto.randomUUID());
 
-    const res = await container.fetch(
-      switchPort(
-        new Request(`http://container${path}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: body ? JSON.stringify(body) : undefined,
-        }),
-        8080
-      )
-    );
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (_zenApiKey) {
+        headers["x-zen-api-key"] = _zenApiKey;
+      }
+
+      const res = await container.fetch(
+        switchPort(
+          new Request(`http://container${path}`, {
+            method: "POST",
+            headers,
+            body: body ? JSON.stringify(body) : undefined,
+          }),
+          8080
+        )
+      );
 
     if (!res.ok) {
       const errorText = await res.text();

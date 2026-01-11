@@ -62,6 +62,7 @@ const worker = await Worker(`${project}-api`, {
     CONTAINER: browserContainer,
     ORCHESTRATOR: orchestratorDO,
     RALPH_API_KEY: process.env.RALPH_API_KEY ?? "",
+    ZEN_API_KEY: process.env.ZEN_API_KEY ?? "",
     // Only set CONTAINER_URL for non-prod environments
     ...(isProd ? {} : { CONTAINER_URL: process.env.CONTAINER_URL ?? "http://localhost:8081" }),
   },
