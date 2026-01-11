@@ -1,7 +1,12 @@
 /// <reference types="@types/node" />
 
 import alchemy from "alchemy";
-import { Worker, Container, DurableObjectNamespace } from "alchemy/cloudflare";
+import {
+  Worker,
+  Container,
+  DurableObjectNamespace,
+  SvelteKit
+} from "alchemy/cloudflare";
 import { CloudflareStateStore } from "alchemy/state";
 
 const project = "ralphwiggums";
@@ -10,8 +15,8 @@ const app = await alchemy(project, {
   password: process.env.ALCHEMY_PASSWORD || "abc123",
   stateStore: (scope) => new CloudflareStateStore(scope, {
     scriptName: `${project}-state`,
-    stateToken: process.env.ALCHEMY_STATE_TOKEN || "",
-    // forceUpdate: true,
+    stateToken: alchemy.secret(process.env.ALCHEMY_STATE_TOKEN || ""),
+    forceUpdate: true,
   }),
 });
 
@@ -28,8 +33,7 @@ const browserContainer = await Container(`${project}-container`, {
 // Create orchestrator Durable Object
 const orchestratorDO = await DurableObjectNamespace(`${project}-orchestrator`, {
   className: "OrchestratorDO",
-  entrypoint: "./src/orchestrator/orchestrator-do.ts",
-  adopt: false,
+  sqlite: true,
 });
 
 const worker = await Worker(`${project}-api`, {
@@ -46,7 +50,7 @@ const worker = await Worker(`${project}-api`, {
   compatibilityFlags: ["nodejs_compat"],
 });
 
-export const DEMO = await alchemy.svelteKit(`${project}-demo`, {
+export const DEMO = await SvelteKit(`${project}-demo`, {
   domains: ["ralphwiggums.coey.dev"],
   bindings: {
     WORKER: worker,
