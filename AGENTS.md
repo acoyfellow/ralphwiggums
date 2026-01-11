@@ -13,14 +13,33 @@ This file is the source-of-truth for:
 **ALL workflow file changes MUST be validated before pushing:**
 
 ```bash
-# Install validator
-pip install pyyaml
-
-# Validate before push
+# Option 1: Python (if available)
 python3 -c "import yaml; yaml.safe_load(open('.github/workflows/deploy.yml'))" && echo "✅ Valid" || echo "❌ Invalid - FIX BEFORE PUSHING"
+
+# Option 2: Node/Bun (alternative)
+node -e "const yaml = require('yaml'); const fs = require('fs'); yaml.parse(fs.readFileSync('.github/workflows/deploy.yml', 'utf8')); console.log('✅ Valid')"
 ```
 
 **NEVER push YAML syntax errors** - they break CI/CD and waste time!
+
+---
+
+## QUICK REFERENCE
+
+```bash
+# Local dev (two terminals required)
+# Terminal 1: Container server
+cd /Users/jordan/Desktop/ralphwiggums && source .env && PORT=8081 bun run --hot container/server.ts
+
+# Terminal 2: Alchemy dev
+cd /Users/jordan/Desktop/ralphwiggums && export CONTAINER_URL=http://localhost:8081 && bun run dev
+
+# Build & test
+bun run build && bun run check && bun test
+
+# Validate YAML
+python3 -c "import yaml; yaml.safe_load(open('.github/workflows/deploy.yml'))"
+```
 
 ---
 
@@ -32,10 +51,10 @@ Stop only when **ALL** are true:
    - `package.json` is correct (name, versioning, exports)
    - `README.md` has working examples
    - `bun run build` produces publishable artifacts
-   - `npm pack` succeeds and produces the expected tarball contents
+   - Package is published to npm and installable
 
 2) **Fully E2E testable**
-   - `bun test` (or the repo’s test command) runs locally and passes
+   - `bun test` (or the repo's test command) runs locally and passes
    - E2E tests exercise the real flow end-to-end (not mocks-only)
    - E2E tests are runnable by a new machine with documented prerequisites
 
@@ -52,7 +71,7 @@ If any of the above is not true, keep iterating.
 
 1) **YAML Validation Required**
 - **ALL `.github/workflows/*.yml` changes MUST pass validation before pushing**
-- Use: `python3 -c "import yaml; yaml.safe_load(open('file.yml'))"`
+- Use: `python3 -c "import yaml; yaml.safe_load(open('file.yml'))"` or Node alternative
 - **NEVER push invalid YAML** - it breaks CI/CD immediately
 
 2) **Do only PRD work**
@@ -77,18 +96,17 @@ Persistent memory is ONLY:
 - git commits
 - `scripts/ralph/prd.json` (task truth)
 - `scripts/ralph/progress.txt` (patterns + learnings)
-- `@CHANGELOG.md` (decisions + deploy notes + gotchas)
+- `CHANGELOG.md` (decisions + deploy notes + gotchas)
 
 7) **Secrets**
 - Never commit secrets.
 - Never rely on `process.env` in Workers.
 - Use Worker bindings (`env.*`) in production code paths.
 
-7) **Effect-First Principles**
+8) **Effect-First Principles**
 - Effect-TS solves whole classes of issues out of the box. Use it.
 - **ALWAYS use Effect for:** concurrency (`Effect.all`), error handling (`Data.TaggedError`), resource management (`Effect.acquireUseRelease`), retries (`Effect.retry`), streaming (`Effect.Stream`), state (`Effect.Ref`), scheduling (`Effect.sleep`).
-- **NEVER use:** `Promise.all`, `try/catch`, `setTimeout`, manual resource cleanup.
-- Effect source reference: `~/.vendor/effect` (NOT in this repo - lives higher up in file system).
+- **PREFER Effect over:** `Promise.all` (use `Effect.all` for complex orchestration), `try/catch` (use `Effect.catchAll` or typed errors), `setTimeout` (use `Effect.sleep`), manual resource cleanup (use `Effect.acquireUseRelease`).
 - If you're writing async code, use Effect. If you're not using Effect, you're probably doing it wrong.
 
 ---
@@ -126,8 +144,8 @@ bun run dev
 - **State management** - `Effect.Ref` for shared state (pool status)
 - **Scheduling** - `Effect.sleep` for delays, not `setTimeout`
 
-**NEVER use:**
-- Raw `Promise.all` - use `Effect.all` instead
+**PREFER Effect over:**
+- Raw `Promise.all` - use `Effect.all` for complex orchestration (simple cases are fine)
 - `try/catch` blocks - use `Effect.catchAll` or typed errors
 - `setTimeout` - use `Effect.sleep`
 - Manual resource cleanup - use `Effect.acquireUseRelease`
@@ -142,7 +160,7 @@ bun run dev
      { concurrency: pool.size }
    );
    
-   // ❌ DON'T: Promise.all
+   // ❌ DON'T: Promise.all for complex orchestration
    const statuses = await Promise.all(
      pool.instances.map(instance => checkHealth(instance))
    );
@@ -189,9 +207,9 @@ bun run dev
 
 ### Effect Source Reference
 
-- Effect source: `~/.vendor/effect`
-- Use this to understand Effect types, patterns, and APIs
-- **NOT IN THIS REPO** - lives higher up in the file system
+- Effect documentation: https://effect.website
+- Effect GitHub: https://github.com/effect-ts/effect
+- Use these to understand Effect types, patterns, and APIs
 
 ### Why Effect Matters
 

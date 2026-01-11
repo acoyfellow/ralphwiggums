@@ -99,15 +99,10 @@ let browserFactory: () => Stagehand = () => {
 
     case "zen":
       default: {
-        const apiKey = process.env.ANTHROPIC_API_KEY || process.env.ZEN_API_KEY;
+        const apiKey = process.env.ZEN_API_KEY || process.env.ANTHROPIC_API_KEY;
         if (!apiKey) {
-          throw new Error("ANTHROPIC_API_KEY or ZEN_API_KEY required when AI_PROVIDER=zen. " +
-            "OpenCode Zen uses Anthropic's API. Get your key from https://console.anthropic.com/ (must start with 'sk-ant-').");
-        }
-        // Verify it's an Anthropic-style key
-        if (!apiKey.startsWith("sk-ant-")) {
-          throw new Error("Invalid API key format. Anthropic keys must start with 'sk-ant-'. " +
-            "Get a key from https://console.anthropic.com/");
+          throw new Error("ZEN_API_KEY required when AI_PROVIDER=zen. " +
+            "Get your API key from your OpenCode Zen dashboard.");
         }
         return new Stagehand({
           env: "LOCAL",

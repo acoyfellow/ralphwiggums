@@ -66,29 +66,27 @@ This separation enables reliable, resumable browser automation with proper resou
 
 ## AI Provider
 
-ralphwiggums requires an **AI Provider** for browser automation:
-
-| Provider | Model | Cost | Setup |
-|----------|-------|------|-------|
-| OpenCode Zen | `claude-3-5-sonnet-latest` | Pay-as-you-go | Requires Anthropic API key |
+ralphwiggums uses **OpenCode Zen** for browser automation. Zen offers free models to get started.
 
 ### OpenCode Zen
 
-Uses Anthropic's API directly. Better reliability for automation tasks.
-
-**Required environment variables:**
+**Required environment variable:**
 ```bash
-AI_PROVIDER=zen
-ANTHROPIC_API_KEY=sk-ant-your_api_key_here
+ZEN_API_KEY=your_zen_api_key_here
 ```
 
-**IMPORTANT:** Get your API key from https://console.anthropic.com/
-- Key must start with `sk-ant-` (Anthropic format)
+**Getting your API key:**
+1. Sign up for a free OpenCode Zen account
+2. Get your API key from the Zen dashboard
+3. Use that key as `ZEN_API_KEY` in your environment
 
-**Optional model override:**
+**Optional configuration:**
 ```bash
-ZEN_MODEL=claude-3-5-sonnet-latest
+AI_PROVIDER=zen                    # Default, can be omitted
+ZEN_MODEL=claude-3-5-sonnet-latest # Default model (free tier available)
 ```
+
+**Free tier:** OpenCode Zen offers free models to get started with browser automation.
 
 ## Response
 

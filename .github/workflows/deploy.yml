@@ -51,40 +51,10 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           ZEN_API_KEY: ${{ secrets.ZEN_API_KEY }}
+          RALPH_API_KEY: ${{ secrets.RALPH_API_KEY }}
           PULL_REQUEST: ${{ github.event.number }}
           GITHUB_SHA: ${{ github.sha }}
           ALCHEMY_CI_STATE_STORE_CHECK: false
-
-  release:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    steps:
-      - uses: actions/checkout@v4
-      - name: Create Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v0.0.1
-          release_name: RalphWiggums v0.0.1
-          body: |
-            Initial release of RalphWiggums - Effect-first browser automation
-
-            ## Features
-            - Simple API for browser automation
-            - Promise tag completion detection
-            - Effect-TS for type safety and composability
-            - Configurable iteration limits
-            - Comprehensive error handling
-
-            ## Usage
-            ```typescript
-            import { run } from 'ralphwiggums';
-            const result = await run('Go to example.com and get the page title');
-            ```
-          draft: false
-          prerelease: false
 
   cleanup:
     runs-on: ubuntu-latest

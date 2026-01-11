@@ -18,7 +18,9 @@ export class RalphContainer extends Container {
     CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN ?? "",
     CLOUDFLARE_MODEL: process.env.CLOUDFLARE_MODEL ?? "",
 
-    // OpenCode Zen credentials (maps to ANTHROPIC_API_KEY for Stagehand)
+    // OpenCode Zen credentials
+    // Note: Users configure their Anthropic API key in the Zen dashboard,
+    // then get a Zen API key to use here
     ANTHROPIC_API_KEY: process.env.ZEN_API_KEY ?? "",
     ZEN_MODEL: process.env.ZEN_MODEL ?? "",
   };
