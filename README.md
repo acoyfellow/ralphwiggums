@@ -83,7 +83,7 @@ ZEN_API_KEY=your_zen_api_key_here
 **Optional configuration:**
 ```bash
 AI_PROVIDER=zen                    # Default, can be omitted
-ZEN_MODEL=claude-3-5-sonnet-latest # Default model (free tier available)
+ZEN_MODEL=claude-sonnet-4-5-20250929 # Default model (free tier available)
 ```
 
 **Free tier:** OpenCode Zen offers free models to get started with browser automation.
@@ -149,7 +149,7 @@ npm install ralphwiggums
 - **Node.js 18+** required
 - **AI Provider** required for browser automation:
   - **OpenCode Zen** - Requires `ZEN_API_KEY`
-  - Model: `claude-3-5-sonnet-latest`
+  - Model: `claude-sonnet-4-5-20250929`
 - See `.env.example` for all environment variables
 
 ## Quick Start

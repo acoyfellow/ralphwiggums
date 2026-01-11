@@ -1,4 +1,20 @@
-async function createDirectPlaywrightBrowser(apiKey: string, requestId: string) {
+/**
+ * Container now acts as API wrapper for browser pool access.
+ * Browsers are managed by the orchestrator pool, not created/destroyed here.
+ */
+/**
+ * Simple URL extraction from action text
+ */
+function extractUrlFromAction(action: string): string | null {
+  // Look for URLs in common patterns
+  const urlRegex = /(https?:\/\/[^\s]+)/i;
+  const match = action.match(urlRegex);
+  return match ? match[1] : null;
+}
+
+async function getBrowserFromPool(requestId: string) {
+  // TODO: Integrate with orchestrator pool to get browser instance
+  // For now, create browser per request (will be replaced with pool integration)
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext();
@@ -6,6 +22,7 @@ async function createDirectPlaywrightBrowser(apiKey: string, requestId: string) 
 
   return {
     page,
+    browser,
     extract: async (instruction: string) => {
       // Enhanced text extraction with title and content
       const title = await page.title();

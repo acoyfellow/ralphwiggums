@@ -45,7 +45,7 @@ let browserFactory = () => {
             return new Stagehand({
                 env: "LOCAL",
                 apiKey,
-                model: process.env.ZEN_MODEL || "claude-3-5-sonnet-latest",
+                model: process.env.ZEN_MODEL || "claude-sonnet-4-5-20250929",
                 localBrowserLaunchOptions: {
                     headless: true,
                     viewport: { width: 1280, height: 720 },

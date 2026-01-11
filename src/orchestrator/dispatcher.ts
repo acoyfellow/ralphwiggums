@@ -9,7 +9,7 @@ import { Effect, Data } from "effect";
 import type { ReliableScheduler, Task } from "ironalarm";
 import type { BrowserPool, BrowserAutomationParams } from "./types.js";
 import { PoolError, PoolExhaustedError } from "./pool.js";
-import { findAvailableBrowser, markBrowserBusy, markBrowserAvailable } from "./pool.js";
+import { findAvailableBrowser, acquireBrowser, releaseBrowser, type BrowserInstance } from "./pool.js";
 
 // ============================================================================
 // Errors
@@ -29,49 +29,20 @@ export class DispatcherError extends Data.TaggedError("DispatcherError")<{
  */
 function executeTaskOnBrowser(
   task: Task,
-  browserUrl: string
+  browser: BrowserInstance
 ): Effect.Effect<void, DispatcherError, never> {
-  return Effect.gen(function* () {
-    const params = task.params as BrowserAutomationParams;
-
-    // Call container /do endpoint
-    const response = yield* Effect.tryPromise({
-      try: async () => {
-        const res = await fetch(`${browserUrl}/do`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(params)
-        });
-
-        if (!res.ok) {
-          throw new Error(`Container error: ${res.status} ${res.statusText}`);
-        }
-
-        return await res.json();
-      },
-      catch: (error: unknown) => {
-        throw new Error(`Task execution failed: ${error instanceof Error ? error.message : String(error)}`);
-      }
-    });
-
-    // Check for promise tag completion
-    const resultText = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
-    const hasPromiseTag = /<promise>(.*?)<\/promise>/gi.test(resultText);
-
-    if (hasPromiseTag) {
-      // Task completed successfully
-      return;
+  return Effect.tryPromise({
+    try: async () => {
+      // TODO: Execute task directly on browser instance
+      // For now, just succeed (will be implemented when integrating with browser pool)
+      console.log(`Executing task ${task.taskId} on browser ${browser.id}`);
+    },
+    catch: (error) => {
+      throw new DispatcherError({
+        reason: `Failed to execute task on browser: ${error instanceof Error ? error.message : String(error)}`,
+        taskId: task.taskId,
+      });
     }
-
-    if (!response.success) {
-      yield* Effect.fail(new DispatcherError({
-        reason: `Task failed: ${response.error || response.message}`,
-        taskId: task.taskId
-      }));
-    }
-
-    // Task completed without promise tag - may need retry
-    return;
   });
 }
 
@@ -94,7 +65,8 @@ export function dispatchTasks(
     const availableCapacity = pool.availableCount;
 
     if (availableCapacity === 0) {
-      // No browsers available - tasks will remain queued
+      // No browsers available - log and tasks will remain queued for next dispatch cycle
+      console.log(`Pool exhausted: ${tasks.length} tasks waiting for available browsers`);
       return;
     }
 
@@ -117,16 +89,13 @@ function dispatchSingleTask(
   pool: BrowserPool
 ): Effect.Effect<void, DispatcherError | PoolError | PoolExhaustedError, never> {
   return Effect.gen(function* () {
-    // Find available browser
-    const browser = yield* findAvailableBrowser(pool);
-
-    // Mark browser as busy
-    yield* markBrowserBusy(pool, browser.id, task.taskId);
+    // Acquire available browser
+    const browser = yield* acquireBrowser(pool, task.taskId);
 
     try {
-      yield* executeTaskOnBrowser(task, browser.url!);
+      yield* executeTaskOnBrowser(task, browser);
     } finally {
-      yield* Effect.ignore(markBrowserAvailable(pool, browser.id));
+      yield* Effect.ignore(releaseBrowser(pool, browser.id));
     }
   });
 }

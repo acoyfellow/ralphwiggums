@@ -44,6 +44,8 @@ export interface RalphOptions {
   maxIterations?: number;
   timeout?: number;
   resumeFrom?: string;
+  // Internal: current iteration for resumable tasks
+  _currentIteration?: number;
 }
 
 export interface RalphResult {
@@ -630,17 +632,22 @@ export function doThis(
     const validatedPrompt = validateString(prompt, config.maxPromptLength, "prompt");
     const max = validatePositiveInt(opts.maxIterations, 10, "maxIterations");
     const timeout = validatePositiveInt(opts.timeout, config.requestTimeout, "timeout");
+    const currentIteration = opts._currentIteration || 1;
 
     const taskId = opts.resumeFrom?.split("-")[0] || crypto.randomUUID();
-    const checkpointId = `${taskId}-0`;
+    const checkpointId = `${taskId}-${currentIteration}`;
 
     // Use Effect.acquireUseRelease for semaphore management
+    // ITERATION CONTROL: Orchestrator owns iterations for resumability
+    // Container performs single attempts, orchestrator decides retry/completion
     const taskExecution = Effect.gen(function* () {
+      // Container performs single attempt (no internal iterations)
       const response = yield* Effect.timeout(
         Effect.tryPromise({
           try: () => containerFetch(requestId, "/do", {
             prompt: validatedPrompt,
-            maxIterations: max
+            // Container performs single attempt only - orchestrator controls iterations
+            maxIterations: 1
           }),
           catch: (e) => new BrowserError({
             reason: e instanceof Error ? e.message : "action failed",
@@ -653,21 +660,53 @@ export function doThis(
       ));
 
       if (response?.success) {
-        yield* Effect.ignore(
-          Effect.tryPromise({
-            try: () => saveCheckpoint(requestId, taskId, response.iterations || 1),
-            catch: () => undefined
-          })
-        );
-        log(requestId, "info", "Task completed", { iterations: response.iterations || 1 });
-        return {
-          success: true,
-          message: response.promiseCompleted ? "Task completed via promise tag" : "Task completed",
-          data: response.data,
-          iterations: response.iterations || 1,
-          checkpointId,
-          requestId
-        } as RalphResult;
+        // Check for promise tag completion (ralph-loop pattern)
+        const resultText = typeof response.data === 'string' ? response.data : JSON.stringify(response.data || '');
+        const promiseMatch = resultText.match(/<promise>(.*?)<\/promise>/i);
+
+        if (promiseMatch) {
+          // Task completed via promise tag - no more iterations needed
+          yield* Effect.ignore(
+            Effect.tryPromise({
+              try: () => saveCheckpoint(requestId, taskId, currentIteration), // Completed on current iteration
+              catch: () => undefined
+            })
+          );
+          log(requestId, "info", "Task completed via promise tag", { promise: promiseMatch[1], iteration: currentIteration });
+          return {
+            success: true,
+            message: `Task completed via promise tag: ${promiseMatch[1]}`,
+            data: response.data,
+            iterations: currentIteration,
+            checkpointId,
+            requestId,
+            promiseCompleted: true
+          } as RalphResult;
+        }
+
+        // Task succeeded but no promise tag - check if we should continue iterating
+        if (currentIteration < opts.maxIterations!) {
+          // More iterations available - save checkpoint and signal to continue
+          yield* Effect.ignore(
+            Effect.tryPromise({
+              try: () => saveCheckpoint(requestId, taskId, currentIteration),
+              catch: () => undefined
+            })
+          );
+          log(requestId, "info", "Iteration completed, continuing to next iteration", { current: currentIteration, max: opts.maxIterations });
+          // Will be handled by orchestrator for next iteration
+        } else {
+          // Reached max iterations without promise tag
+          log(requestId, "info", "Task completed after max iterations", { iterations: currentIteration });
+          return {
+            success: true,
+            message: "Task completed after maximum iterations",
+            data: response.data,
+            iterations: currentIteration,
+            checkpointId,
+            requestId
+          } as RalphResult;
+        }
       }
 
       log(requestId, "error", "Task failed", { error: response?.error });

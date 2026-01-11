@@ -38,10 +38,7 @@ export function incrementSessionIteration(
 }
 
 /**
- * Mark session as completed with promise tag
- */
-/**
- * Mark session as completed with promise tag
+ * Mark session as completed with promise tag detection
  */
 export function completeSessionWithPromise(
   taskId: string,
@@ -62,6 +59,7 @@ export function completeSessionWithPromise(
       lastUpdated: Date.now(),
     };
 
+    // Save completed session state
     yield* saveSessionState(taskId, completedState, scheduler);
   });
 }
@@ -78,9 +76,6 @@ export function shouldContinueSession(
   return !state.completed && state.iteration < state.maxIterations;
 }
 
-/**
- * Check if session is completed (has promise tag)
- */
 /**
  * Check if session is completed (has promise tag)
  */
@@ -105,6 +100,7 @@ export function saveSessionState(
   scheduler: SchedulerService
 ): Effect.Effect<void, SessionError, never> {
   return Effect.gen(function* () {
+    // Use SchedulerService checkpoint method (returns Effect)
     yield* scheduler.checkpoint(taskId, "session", state);
   }).pipe(
     Effect.mapError(() => new SessionError({
@@ -128,6 +124,7 @@ export function loadSessionState(
   scheduler: SchedulerService
 ): Effect.Effect<SessionState | null, SessionError, never> {
   return Effect.gen(function* () {
+    // Use SchedulerService getCheckpoint method (returns Effect<unknown>)
     const state = yield* scheduler.getCheckpoint(taskId, "session");
 
     if (!state) {

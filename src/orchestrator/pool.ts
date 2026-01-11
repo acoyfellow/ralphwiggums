@@ -1,8 +1,9 @@
 /**
  * Browser Pool Management for Orchestrator
  *
- * Effect-based pool that manages container availability and health.
- * Delegates actual browser lifecycle to containers via /do endpoint.
+ * Effect-based pool that manages persistent browser instances.
+ * Browsers are created once and reused across tasks for performance.
+ * Pool owns browser lifecycle: create, health check, assign, cleanup.
  */
 
 import { Effect, Data } from "effect";
@@ -14,7 +15,7 @@ import type { BrowserInstance, BrowserPool, OrchestratorDOState } from "./types.
 
 export class PoolError extends Data.TaggedError("PoolError")<{
   reason: string;
-  containerUrl?: string;
+  browserId?: string;
 }> {}
 
 export class PoolExhaustedError extends Data.TaggedError("PoolExhaustedError")<{
@@ -22,62 +23,62 @@ export class PoolExhaustedError extends Data.TaggedError("PoolExhaustedError")<{
   available: number;
 }> {}
 
+export type { BrowserInstance, BrowserPool };
+
 // ============================================================================
 // Pool Implementation
 // ============================================================================
 
 /**
- * Create a new browser pool with containers
+ * Create a new browser pool with persistent browser instances
+ * Uses Effect.all for concurrent browser creation
  */
 export function createPool(
-  containerUrls: string[],
-  maxSize: number = 20
-): Effect.Effect<BrowserPool, never, never> {
-  return Effect.succeed({
-    instances: containerUrls.map((url, index) => ({
-      id: `container-${index}`,
-      status: "available" as const,
-      lastHealthCheck: Date.now(),
-      currentTaskId: undefined,
-      url,
+  size: number = 5
+): Effect.Effect<BrowserPool, PoolError, never> {
+  const createBrowsers = Array.from({ length: size }, (_, index) =>
+    createBrowserInstance(`browser-${index}`)
+  );
+
+  return Effect.all(createBrowsers, { concurrency: size }).pipe(
+    Effect.map((instances: BrowserInstance[]) => ({
+      instances,
+      maxSize: size,
+      availableCount: instances.filter((i: BrowserInstance) => i.status === "available").length,
+      busyCount: 0,
+      unhealthyCount: 0,
     })),
-    maxSize,
-    availableCount: containerUrls.length,
-    busyCount: 0,
-    unhealthyCount: 0,
-  });
+    Effect.mapError((error: PoolError) => new PoolError({ reason: `Failed to create browser pool: ${error.reason}` }))
+  );
 }
 
 /**
- * Perform concurrent health checks on all pool instances
+ * Perform concurrent health checks on all browser instances
+ * Uses Effect.all for parallel health checks
  */
 export function healthCheckPool(
   pool: BrowserPool
 ): Effect.Effect<void, PoolError, never> {
-  const healthChecks = pool.instances.map(instance => {
-    if (!instance.url) {
-      return Effect.succeed(instance);
-    }
-
-    return checkContainerHealth(instance.url).pipe(
+  const healthChecks = pool.instances.map(instance =>
+    checkBrowserHealth(instance).pipe(
       Effect.map(isHealthy => {
         instance.status = isHealthy ? "available" : "unhealthy";
         instance.lastHealthCheck = Date.now();
         return instance;
       }),
-      Effect.catchAll(error => {
+      Effect.catchAll(() => {
         instance.status = "unhealthy";
         instance.lastHealthCheck = Date.now();
         return Effect.succeed(instance);
       })
-    );
-  });
+    )
+  );
 
   return Effect.all(healthChecks, { concurrency: pool.instances.length }).pipe(
     Effect.map(() => {
-      pool.availableCount = pool.instances.filter(i => i.status === "available").length;
-      pool.busyCount = pool.instances.filter(i => i.status === "busy").length;
-      pool.unhealthyCount = pool.instances.filter(i => i.status === "unhealthy").length;
+      pool.availableCount = pool.instances.filter((i: BrowserInstance) => i.status === "available").length;
+      pool.busyCount = pool.instances.filter((i: BrowserInstance) => i.status === "busy").length;
+      pool.unhealthyCount = pool.instances.filter((i: BrowserInstance) => i.status === "unhealthy").length;
     }),
     Effect.mapError(() => new PoolError({ reason: "Health check failed" }))
   );
@@ -102,34 +103,27 @@ export function findAvailableBrowser(
 }
 
 /**
- * Mark browser as busy
+ * Acquire a browser instance for task execution using Effect
  */
-export function markBrowserBusy(
+export function acquireBrowser(
   pool: BrowserPool,
-  browserId: string,
   taskId: string
-): Effect.Effect<void, PoolError, never> {
-  const browser = pool.instances.find(i => i.id === browserId);
-
-  if (!browser) {
-    return Effect.fail(new PoolError({ reason: `Browser ${browserId} not found` }));
-  }
-
-  if (browser.status !== "available") {
-    return Effect.fail(new PoolError({ reason: `Browser ${browserId} is not available` }));
-  }
-
-  browser.status = "busy";
-  browser.currentTaskId = taskId;
-  pool.availableCount--;
-
-  return Effect.succeed(undefined);
+): Effect.Effect<BrowserInstance, PoolError | PoolExhaustedError, never> {
+  return findAvailableBrowser(pool).pipe(
+    Effect.flatMap(browser => {
+      browser.status = "busy";
+      browser.currentTaskId = taskId;
+      pool.availableCount--;
+      pool.busyCount++;
+      return Effect.succeed(browser);
+    })
+  );
 }
 
 /**
- * Mark browser as available
+ * Release a browser instance back to the pool using Effect
  */
-export function markBrowserAvailable(
+export function releaseBrowser(
   pool: BrowserPool,
   browserId: string
 ): Effect.Effect<void, PoolError, never> {
@@ -142,6 +136,7 @@ export function markBrowserAvailable(
   browser.status = "available";
   browser.currentTaskId = undefined;
   pool.availableCount++;
+  pool.busyCount--;
 
   return Effect.succeed(undefined);
 }
@@ -164,35 +159,54 @@ export function getPoolStatus(pool: BrowserPool) {
 // ============================================================================
 
 /**
- * Check if a container is healthy by calling its health endpoint
+ * Create a new browser instance with Playwright
  */
-function checkContainerHealth(containerUrl: string): Effect.Effect<boolean, PoolError, never> {
-  const healthCheck = Effect.tryPromise({
+function createBrowserInstance(id: string): Effect.Effect<BrowserInstance, PoolError, never> {
+  return Effect.tryPromise({
     try: async () => {
-      const response = await fetch(`${containerUrl}/health`);
+      const { chromium } = await import("playwright");
+      const browser = await chromium.launch({ headless: true });
+      const context = await browser.newContext();
+      const page = await context.newPage();
 
-      if (!response.ok) {
-        return false;
-      }
+      return {
+        id,
+        status: "available" as const,
+        lastHealthCheck: Date.now(),
+        currentTaskId: undefined,
+        browser,
+        context,
+        page,
+      };
+    },
+    catch: (error) => {
+      throw new PoolError({
+        reason: `Failed to create browser instance ${id}: ${error instanceof Error ? error.message : String(error)}`
+      });
+    }
+  });
+}
 
-      const data = await response.json();
-      return data?.status === "healthy";
+/**
+ * Check if a browser instance is healthy
+ */
+function checkBrowserHealth(instance: BrowserInstance): Effect.Effect<boolean, PoolError, never> {
+  if (!instance.page) {
+    return Effect.succeed(false);
+  }
+
+  return Effect.tryPromise({
+    try: async () => {
+      // Simple health check: try to get page title
+      await instance.page!.title();
+      return true;
     },
     catch: () => false
-  });
-
-  return healthCheck.pipe(
-    // Use Effect.timeout instead of setTimeout
-    Effect.timeout("5 seconds"),
-    Effect.catchAll(() => 
-      Effect.succeed(false).pipe(
-        Effect.tap(() => Effect.sync(() => 
-          console.warn(`Health check failed for ${containerUrl}`)
-        ))
-      )
-    ),
+  }).pipe(
+    Effect.timeout("10 seconds"),
+    Effect.catchAll(() => Effect.succeed(false)),
     Effect.mapError(() => new PoolError({
-      reason: `Health check failed for ${containerUrl}`
+      reason: `Health check failed for browser ${instance.id}`
     }))
   );
 }

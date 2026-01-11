@@ -22,7 +22,7 @@ const app = await alchemy(project, {
 
 const browserContainer = await Container(`${project}-container`, {
   className: "RalphContainer",
-  adopt: false,
+  adopt: true,  // Adopt existing DO to avoid conflicts on redeploy
   build: {
     context: import.meta.dirname,
     dockerfile: "Dockerfile",

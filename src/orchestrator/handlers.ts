@@ -6,10 +6,11 @@
  */
 
 import { Hono } from "hono";
-import { Effect } from "effect";
+import { Effect, Stream } from "effect";
 import type { ReliableScheduler } from "ironalarm";
 import type { BrowserPool, BrowserAutomationParams } from "./types.js";
 import { SchedulerService } from "./types.js";
+import { formatSseEvent, createSseEvent, streamingService } from "./streaming.js";
 
 // ============================================================================
 // API Response Types
@@ -45,7 +46,11 @@ interface ErrorResponse {
  */
 export function createOrchestratorHandlers(
   scheduler: ReliableScheduler,
-  pool: BrowserPool
+  pool: BrowserPool,
+  getPoolStatus: () => { size: number; maxSize: number; available: number; busy: number; unhealthy: number },
+  runNow: (taskId: string, params: BrowserAutomationParams, options?: { priority?: number }) => Promise<void>,
+  schedule: (at: Date | number, taskId: string, params: BrowserAutomationParams, options?: { priority?: number }) => Promise<void>,
+  cancelTask: (taskId: string) => Promise<void>
 ): Hono {
   const app = new Hono();
 
@@ -162,6 +167,58 @@ export function createOrchestratorHandlers(
     };
 
     return c.json(response);
+  });
+
+  // GET /orchestrator/tasks/:taskId/stream - SSE stream for task events
+  app.get("/orchestrator/tasks/:taskId/stream", async (c) => {
+    const taskId = c.req.param("taskId");
+
+    // Check if listener can be added
+    if (!streamingService.canAddListener(taskId)) {
+      return c.json(
+        { error: "Too many listeners for this task", tag: "ListenerLimit" },
+        { status: 429 }
+      );
+    }
+
+    streamingService.addListener(taskId);
+
+    const body = new ReadableStream({
+      start(controller) {
+        // Send initial event
+        const queuedEvent = formatSseEvent(
+          createSseEvent("queued", taskId, { message: "Task queued" })
+        );
+        controller.enqueue(new TextEncoder().encode(queuedEvent));
+
+        // Subscribe to task updates (simplified - would need actual task event emitter)
+        // For now, send periodic heartbeat until task completes
+        const heartbeatInterval = setInterval(() => {
+          const event = formatSseEvent(
+            createSseEvent("checkpoint", taskId, { message: "Task in progress" })
+          );
+          try {
+            controller.enqueue(new TextEncoder().encode(event));
+          } catch {
+            clearInterval(heartbeatInterval);
+          }
+        }, 5000);
+
+        // Cleanup on close
+        c.req.raw.signal.addEventListener("abort", () => {
+          clearInterval(heartbeatInterval);
+          streamingService.removeListener(taskId);
+        });
+      },
+    });
+
+    return c.newResponse(body, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+      },
+    });
   });
 
   app.post("/orchestrator/scale", async (c) => {

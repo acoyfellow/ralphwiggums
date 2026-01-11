@@ -49,7 +49,9 @@ export interface BrowserInstance {
   status: "available" | "busy" | "unhealthy";
   lastHealthCheck: number;
   currentTaskId?: string;
-  url?: string;
+  browser?: import("playwright").Browser;
+  context?: import("playwright").BrowserContext;
+  page?: import("playwright").Page;
 }
 
 export interface BrowserPool {
