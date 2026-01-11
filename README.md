@@ -21,7 +21,7 @@ Built with [Effect-TS](https://effect.website) for typed error handling and func
 
 This library is inspired by the **Ralph Loop** pattern discovered by [Geoffrey Huntley](https://ghuntley.com/). The Ralph Loop is a simple but powerful pattern: give an AI agent a task, let it iterate until completion, and handle failures gracefully. As Geoffrey puts it, "Ralph Wiggum as a software engineer" — persistent, determined, and surprisingly effective.
 
-Learn more about Ralph Loops and Geoffrey's work on [his blog](https://ghuntley.com/) and [Twitter](https://x.com/GeoffreyHuntley).
+Learn more about Ralph Loops and Geoffrey's work on [his blog](https://ghuntley.com/) and [Twitter](https://x.com/GeoffreyHuntley). For best practices on running Ralph-style loops, see [Matt Pocock's 11 Tips for AI Coding with Ralph Wiggum](https://www.aihero.dev/tips-for-ai-coding-with-ralph-wiggum).
 
 ## What it does
 

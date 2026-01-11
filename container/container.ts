@@ -4,6 +4,8 @@
  */
 
 import { Container } from "@cloudflare/containers";
+// @ts-ignore - cloudflare:workers module not available in build but works at runtime
+import { env } from "cloudflare:workers";
 import { handleStart, handleInstruction, handleExtract, handleStop, handleHealth, route } from "./server.ts";
 
 export class RalphContainer extends Container {
@@ -11,18 +13,18 @@ export class RalphContainer extends Container {
 
   envVars = {
     // AI Provider selection (cloudflare or zen)
-    AI_PROVIDER: process.env.AI_PROVIDER ?? "zen",
+    AI_PROVIDER: env.AI_PROVIDER ?? "zen",
 
     // Cloudflare AI credentials
-    CLOUDFLARE_ACCOUNT_ID: process.env.CLOUDFLARE_ACCOUNT_ID ?? "",
-    CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN ?? "",
-    CLOUDFLARE_MODEL: process.env.CLOUDFLARE_MODEL ?? "",
+    CLOUDFLARE_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID ?? "",
+    CLOUDFLARE_API_TOKEN: env.CLOUDFLARE_API_TOKEN ?? "",
+    CLOUDFLARE_MODEL: env.CLOUDFLARE_MODEL ?? "",
 
     // OpenCode Zen credentials
     // Note: Users configure their Anthropic API key in the Zen dashboard,
     // then get a Zen API key to use here
-    ANTHROPIC_API_KEY: process.env.ZEN_API_KEY ?? "",
-    ZEN_MODEL: process.env.ZEN_MODEL ?? "",
+    ANTHROPIC_API_KEY: env.ZEN_API_KEY ?? "",
+    ZEN_MODEL: env.ZEN_MODEL ?? "",
   };
 
   async onRequest(request: Request): Promise<Response> {
