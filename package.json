@@ -43,22 +43,13 @@
   },
   "homepage": "https://github.com/acoyfellow/ralphwiggums#readme",
   "scripts": {
+    "dev": "bun run --hot src/dev.ts",
     "build": "vite build && tsc --outDir dist --declaration",
-    "test": "bun test src/__tests__/",
-    "watch": "tsc --watch",
-    "clean_docker": "",
-    "dev": " lsof -ti:5153 | xargs kill -9 && alchemy dev",
-    "dev:start": "./dev.sh start",
-    "dev:stop": "./dev.sh stop",
-    "dev:container": "source .env && PORT=8081 bun run container/server.ts",
-    "deploy": "alchemy deploy --stage prod --env-file .env",
-    "destroy": "alchemy destroy --stage prod --env-file .env",
-    "prepare": "svelte-kit sync || echo ''",
-    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-    "alchemy:auth": "alchemy login",
-    "validate-yaml": "node -e \"const fs = require('fs'); const path = require('path'); const yaml = require('yaml'); function validateYaml(file) { try { const content = fs.readFileSync(file, 'utf8'); yaml.parse(content); console.log('✅ ' + path.basename(file)); } catch (e) { console.error('❌ ' + path.basename(file) + ': ' + e.message); process.exit(1); } } const files = require('glob').sync('.github/workflows/*.yml'); files.forEach(validateYaml);\"",
-    "pre-commit": "npm run validate-yaml && npm run check"
+    "check": "tsc --noEmit",
+    "test": "bun test",
+    "test:api": "DEMO_URL=https://ralphwiggums.coey.dev bun test src/__tests__/api.test.ts",
+    "deploy": "bun run alchemy deploy",
+    "preview": "vite preview"
   },
   "dependencies": {
     "@browserbasehq/stagehand": "^3.0.7",

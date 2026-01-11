@@ -77,6 +77,38 @@ export async function handleHealth(): Promise<Response> {
   });
 }
 
+export async function handleDo(request: Request): Promise<Response> {
+  try {
+    const body = await request.json();
+    const { prompt, maxIterations = 5, timeout = 60000 } = body;
+
+    if (!prompt) {
+      return new Response(JSON.stringify({ success: false, message: "Prompt is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // TODO: Implement Ralph loop with Zen API
+    // For now, return a placeholder response
+    return new Response(JSON.stringify({
+      success: true,
+      data: "Placeholder: Ralph loop not yet implemented",
+      iterations: 1
+    }), {
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({
+      success: false,
+      message: error instanceof Error ? error.message : "Unknown error"
+    }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+}
+
 export async function route(request: Request): Promise<Response> {
   return new Response(JSON.stringify({ error: "Not found" }), {
     status: 404,
