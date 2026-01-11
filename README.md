@@ -2,29 +2,26 @@
 
 **Effect-first browser automation.** Give it a prompt, get a completed task.
 
-Built with [Effect-TS](https://effect.website) for typed error handling and functional composition. Uses [Stagehand](https://docs.stagehand.dev/v3) for AI-powered browser automation.
+```typescript
+import { run } from "ralphwiggums";
+
+// That's it. Just tell it what to do.
+const result = await run("Go to example.com and get the page title");
+
+console.log(result.data); // "Example Domain"
+```
 
 ```bash
 npm install ralphwiggums
 ```
 
-```typescript
-import { run, type RalphResult } from "ralphwiggums";
+Built with [Effect-TS](https://effect.website) for typed error handling and functional composition. Uses [Stagehand](https://docs.stagehand.dev/v3) for AI-powered browser automation.
 
-// Simple automation
-const result = await run(
-  "Go to example.com and get the page title"
-);
+## Inspiration
 
-console.log(result);
-// {
-//   success: true,
-//   message: "Task completed",
-//   data: "Example Domain",
-//   iterations: 1,
-//   checkpointId: "..."
-// }
-```
+This library is inspired by the **Ralph Loop** pattern discovered by [Geoffrey Huntley](https://ghuntley.com/). The Ralph Loop is a simple but powerful pattern: give an AI agent a task, let it iterate until completion, and handle failures gracefully. As Geoffrey puts it, "Ralph Wiggum as a software engineer" — persistent, determined, and surprisingly effective.
+
+Learn more about Ralph Loops and Geoffrey's work on [his blog](https://ghuntley.com/) and [Twitter](https://x.com/GeoffreyHuntley).
 
 ## What it does
 
