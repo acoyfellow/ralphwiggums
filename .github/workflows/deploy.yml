@@ -81,11 +81,27 @@ jobs:
             echo "Version $PACKAGE_VERSION not found on npm, will publish"
             echo "should_publish=true" >> $GITHUB_OUTPUT
           fi
-      - name: Publish to NPM
-        if: steps.check-version.outputs.should_publish == 'true'
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+    - name: Publish to NPM
+      if: steps.check-version.outputs.should_publish == 'true'
+      run: npm publish --access public
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+    - name: Verify NPM Publication
+      if: steps.check-version.outputs.should_publish == 'true'
+      run: |
+        echo "Waiting for npm to propagate..."
+        sleep 30
+        PACKAGE_VERSION=$(node -p "require('./package.json').version")
+        echo "Checking if ralphwiggums@$PACKAGE_VERSION is published..."
+        if npm view ralphwiggums@$PACKAGE_VERSION version 2>/dev/null; then
+          echo "✅ SUCCESS: ralphwiggums@$PACKAGE_VERSION published to npm!"
+          npm view ralphwiggums@$PACKAGE_VERSION
+        else
+          echo "❌ FAILED: Package not found on npm"
+          exit 1
+        fi
 
   release:
     needs: npm-publish
