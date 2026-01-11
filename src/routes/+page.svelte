@@ -166,27 +166,27 @@ console.log(result.data);`;
     <nav class="flex-1 py-4">
       <div class="mb-6">
         <div
-          class="px-6 py-2 text-[10px] tracking-[0.1em] text-slate-400 font-semibold"
+          class="px-6 py-2 text-[10px] tracking-widest text-slate-400 font-semibold"
         >
           Getting Started
         </div>
         <a
           href="#overview"
-          class="flex items-center gap-2.5 px-6 py-2.5 text-[13px] text-slate-400 transition-all duration-[0.15s] border-l-2 border-transparent hover:text-slate-50 hover:bg-slate-800"
+          class="flex items-center gap-2.5 px-6 py-2.5 text-[13px] text-slate-400 transition-all duration-150 border-l-2 border-transparent hover:text-slate-50 hover:bg-slate-800"
         >
           <span class="text-[14px] opacity-70">→</span>
           Overview
         </a>
         <a
           href="#install"
-          class="flex items-center gap-2.5 px-6 py-2.5 text-[13px] text-cyan-400 transition-all duration-[0.15s] border-l-2 border-cyan-400 bg-cyan-400/15"
+          class="flex items-center gap-2.5 px-6 py-2.5 text-[13px] text-cyan-400 transition-all duration-150 border-l-2 border-cyan-400 bg-cyan-400/15"
         >
           <span class="text-[14px] opacity-70">$</span>
           Installation
         </a>
         <a
           href="#demo"
-          class="flex items-center gap-2.5 px-6 py-2.5 text-[13px] text-slate-400 transition-all duration-[0.15s] border-l-2 border-transparent hover:text-slate-50 hover:bg-slate-800"
+          class="flex items-center gap-2.5 px-6 py-2.5 text-[13px] text-slate-400 transition-all duration-150 border-l-2 border-transparent hover:text-slate-50 hover:bg-slate-800"
         >
           <span class="text-[14px] opacity-70">▶</span>
           Try It
@@ -195,27 +195,27 @@ console.log(result.data);`;
 
       <div class="mb-6">
         <div
-          class="px-6 py-2 text-[10px] tracking-[0.1em] text-slate-400 font-semibold"
+          class="px-6 py-2 text-[10px] tracking-widest text-slate-400 font-semibold"
         >
           Core Concepts
         </div>
         <a
           href="#how"
-          class="flex items-center gap-2.5 px-6 py-2.5 text-[13px] text-slate-400 transition-all duration-[0.15s] border-l-2 border-transparent hover:text-slate-50 hover:bg-slate-800"
+          class="flex items-center gap-2.5 px-6 py-2.5 text-[13px] text-slate-400 transition-all duration-150 border-l-2 border-transparent hover:text-slate-50 hover:bg-slate-800"
         >
           <span class="text-[14px] opacity-70">⟳</span>
           How It Works
         </a>
         <a
           href="#features"
-          class="flex items-center gap-2.5 px-6 py-2.5 text-[13px] text-slate-400 transition-all duration-[0.15s] border-l-2 border-transparent hover:text-slate-50 hover:bg-slate-800"
+          class="flex items-center gap-2.5 px-6 py-2.5 text-[13px] text-slate-400 transition-all duration-150 border-l-2 border-transparent hover:text-slate-50 hover:bg-slate-800"
         >
           <span class="text-[14px] opacity-70">◆</span>
           Philosophy
         </a>
         <a
           href="#code"
-          class="flex items-center gap-2.5 px-6 py-2.5 text-[13px] text-slate-400 transition-all duration-[0.15s] border-l-2 border-transparent hover:text-slate-50 hover:bg-slate-800"
+          class="flex items-center gap-2.5 px-6 py-2.5 text-[13px] text-slate-400 transition-all duration-150 border-l-2 border-transparent hover:text-slate-50 hover:bg-slate-800"
         >
           <span class="text-[14px] opacity-70">&#123;&#125;</span>
           Code Example
@@ -224,14 +224,14 @@ console.log(result.data);`;
 
       <div class="mb-6">
         <div
-          class="px-6 py-2 text-[10px] tracking-[0.1em] text-slate-400 font-semibold"
+          class="px-6 py-2 text-[10px] tracking-widest text-slate-400 font-semibold"
         >
           Resources
         </div>
         <a
           href="https://github.com/acoyfellow/ralphwiggums"
           target="_blank"
-          class="flex items-center gap-2.5 px-6 py-2.5 text-[13px] text-slate-400 transition-all duration-[0.15s] border-l-2 border-transparent hover:text-slate-50 hover:bg-slate-800"
+          class="flex items-center gap-2.5 px-6 py-2.5 text-[13px] text-slate-400 transition-all duration-150 border-l-2 border-transparent hover:text-slate-50 hover:bg-slate-800"
         >
           <span class="text-[14px] opacity-70">◎</span>
           GitHub
@@ -239,7 +239,7 @@ console.log(result.data);`;
         <a
           href="https://www.humanlayer.dev/blog/brief-history-of-ralph"
           target="_blank"
-          class="flex items-center gap-2.5 px-6 py-2.5 text-[13px] text-slate-400 transition-all duration-[0.15s] border-l-2 border-transparent hover:text-slate-50 hover:bg-slate-800"
+          class="flex items-center gap-2.5 px-6 py-2.5 text-[13px] text-slate-400 transition-all duration-150 border-l-2 border-transparent hover:text-slate-50 hover:bg-slate-800"
         >
           <span class="text-[14px] opacity-70">◇</span>
           Origin Story
@@ -251,7 +251,7 @@ console.log(result.data);`;
       <a
         href="https://github.com/acoyfellow/ralphwiggums"
         target="_blank"
-        class="flex items-center gap-2.5 px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-md text-[12px] text-slate-400 transition-all duration-[0.15s] hover:border-slate-600 hover:text-slate-50"
+        class="flex items-center gap-2.5 px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-md text-[12px] text-slate-400 transition-all duration-150 hover:border-slate-600 hover:text-slate-50"
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
           <path
@@ -267,7 +267,7 @@ console.log(result.data);`;
   <main class="flex-1 lg:ml-[280px]">
     <!-- Mobile header -->
     <header
-      class="lg:hidden sticky top-0 z-[100] px-6 py-4 bg-slate-800 border-b border-slate-700 flex items-center justify-between"
+      class="lg:hidden sticky top-0 z-100 px-6 py-4 bg-slate-800 border-b border-slate-700 flex items-center justify-between"
     >
       <div class="flex items-center gap-2.5">
         <div
@@ -334,14 +334,14 @@ console.log(result.data);`;
         <a
           href="https://www.humanlayer.dev/blog/brief-history-of-ralph"
           target="_blank"
-          class="inline-block text-[13px] text-slate-400 mb-8 animate-fade-in-up transition-colors duration-[0.15s] hover:text-cyan-400"
+          class="inline-block text-[13px] text-slate-400 mb-8 animate-fade-in-up transition-colors duration-150 hover:text-cyan-400"
         >
           → Read the origin story
         </a>
 
         <button
           onclick={copyCommand}
-          class="inline-flex items-center gap-3 px-6 py-4 bg-slate-800 border border-slate-700 rounded-lg text-base animate-fade-in-up cursor-pointer transition-all duration-[0.2s] hover:border-slate-600 hover:bg-slate-800"
+          class="inline-flex items-center gap-3 px-6 py-4 bg-slate-800 border border-slate-700 rounded-lg text-base animate-fade-in-up cursor-pointer transition-all duration-200 hover:border-slate-600 hover:bg-slate-800"
         >
           <span class="text-cyan-400 select-none">$</span>
           <span class="text-slate-50">npm install ralphwiggums</span>
@@ -356,7 +356,7 @@ console.log(result.data);`;
       <section id="install" class="py-20 border-b border-slate-700">
         <div class="mb-12">
           <div
-            class="text-[11px] tracking-[0.1em] text-cyan-400 mb-4 font-semibold"
+            class="text-[11px] tracking-widest text-cyan-400 mb-4 font-semibold"
           >
             // Installation
           </div>
@@ -414,7 +414,7 @@ console.log(result.data);`;
       <section id="how" class="py-20 border-b border-slate-700">
         <div class="mb-12">
           <div
-            class="text-[11px] tracking-[0.1em] text-cyan-400 mb-4 font-semibold"
+            class="text-[11px] tracking-widest text-cyan-400 mb-4 font-semibold"
           >
             // The Technique
           </div>
@@ -428,7 +428,7 @@ console.log(result.data);`;
 
         <div class="grid gap-6 mt-12">
           <div
-            class="p-6 bg-slate-800 border border-slate-700 rounded-lg transition-all duration-[0.2s] hover:border-slate-600"
+            class="p-6 bg-slate-800 border border-slate-700 rounded-lg transition-all duration-200 hover:border-slate-600"
           >
             <div class="grid grid-cols-[48px_1fr] gap-5 mb-4">
               <div
@@ -450,7 +450,7 @@ console.log(result.data);`;
           </div>
 
           <div
-            class="p-6 bg-slate-800 border border-slate-700 rounded-lg transition-all duration-[0.2s] hover:border-slate-600"
+            class="p-6 bg-slate-800 border border-slate-700 rounded-lg transition-all duration-200 hover:border-slate-600"
           >
             <div class="grid grid-cols-[48px_1fr] gap-5 mb-4">
               <div
@@ -472,7 +472,7 @@ console.log(result.data);`;
           </div>
 
           <div
-            class="p-6 bg-slate-800 border border-slate-700 rounded-lg transition-all duration-[0.2s] hover:border-slate-600"
+            class="p-6 bg-slate-800 border border-slate-700 rounded-lg transition-all duration-200 hover:border-slate-600"
           >
             <div class="grid grid-cols-[48px_1fr] gap-5 mb-4">
               <div
@@ -496,30 +496,30 @@ console.log(result.data);`;
 
       <!-- Endgame Showcase -->
       <section
-        class="py-[100px] bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 border-t border-slate-700 border-b border-slate-700 relative overflow-hidden"
+        class="py-[100px] bg-linear-to-b from-slate-900 via-slate-800 to-slate-900 border-t border-b border-slate-700 relative overflow-hidden"
       >
         <div
           class="absolute inset-0 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(34,211,238,0.03)_2px,rgba(34,211,238,0.03)_4px)] pointer-events-none animate-glitch-scan"
         ></div>
         <div class="relative max-w-[900px] mx-auto">
           <div
-            class="relative rounded-xl overflow-hidden border-2 border-slate-700 bg-slate-800 animate-pulse-glow transition-all duration-[0.3s] hover:scale-[1.02] hover:border-cyan-400 hover:animate-[glitch_0.3s_ease-in-out,pulse-glow_4s_ease-in-out_infinite]"
+            class="relative rounded-xl overflow-hidden border-2 border-slate-700 bg-slate-800 animate-pulse-glow transition-all duration-300 hover:scale-[1.02] hover:border-cyan-400 hover:animate-[glitch_0.3s_ease-in-out,pulse-glow_4s_ease-in-out_infinite]"
           >
             <div
-              class="absolute top-6 right-6 px-4 py-2 bg-cyan-400/15 border border-cyan-400/30 rounded-md text-[11px] text-cyan-400 tracking-[0.1em] font-semibold z-[4] backdrop-blur-md"
+              class="absolute top-6 right-6 px-4 py-2 bg-cyan-400/15 border border-cyan-400/30 rounded-md text-[11px] text-cyan-400 tracking-widest font-semibold z-4 backdrop-blur-md"
             >
               The Endgame
             </div>
             <img
               src="/endgame.jpg"
               alt="Ralph deprecating gravity - The physics engine had too many dependencies"
-              class="w-full h-auto block relative z-[1]"
+              class="w-full h-auto block relative z-1"
             />
             <div
-              class="absolute top-0 left-0 right-0 bottom-0 bg-gradient-to-b from-transparent via-transparent to-[rgba(15,23,42,0.7)] pointer-events-none z-[2]"
+              class="absolute top-0 left-0 right-0 bottom-0 bg-linear-to-b from-transparent via-transparent to-[rgba(15,23,42,0.7)] pointer-events-none z-2"
             ></div>
             <div
-              class="absolute bottom-0 left-0 right-0 p-8 z-[3] bg-gradient-to-t from-transparent to-[rgba(15,23,42,0.95)]"
+              class="absolute bottom-0 left-0 right-0 p-8 z-3 bg-linear-to-t from-transparent to-[rgba(15,23,42,0.95)]"
             >
               <div
                 class="text-[15px] text-slate-400 leading-[1.6] max-w-[600px]"
@@ -539,7 +539,7 @@ console.log(result.data);`;
       <section id="features" class="py-20 border-b border-slate-700">
         <div class="mb-12">
           <div
-            class="text-[11px] tracking-[0.1em] text-cyan-400 mb-4 font-semibold"
+            class="text-[11px] tracking-widest text-cyan-400 mb-4 font-semibold"
           >
             // Philosophy
           </div>
@@ -553,7 +553,7 @@ console.log(result.data);`;
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div
-            class="p-6 bg-slate-800 border border-slate-700 rounded-lg transition-all duration-[0.2s] hover:border-slate-600"
+            class="p-6 bg-slate-800 border border-slate-700 rounded-lg transition-all duration-200 hover:border-slate-600"
           >
             <div
               class="w-9 h-9 flex items-center justify-center bg-cyan-400/15 border border-cyan-400/20 rounded-md text-base mb-4"
@@ -568,7 +568,7 @@ console.log(result.data);`;
           </div>
 
           <div
-            class="p-6 bg-slate-800 border border-slate-700 rounded-lg transition-all duration-[0.2s] hover:border-slate-600"
+            class="p-6 bg-slate-800 border border-slate-700 rounded-lg transition-all duration-200 hover:border-slate-600"
           >
             <div
               class="w-9 h-9 flex items-center justify-center bg-cyan-400/15 border border-cyan-400/20 rounded-md text-base mb-4"
@@ -583,7 +583,7 @@ console.log(result.data);`;
           </div>
 
           <div
-            class="p-6 bg-slate-800 border border-slate-700 rounded-lg transition-all duration-[0.2s] hover:border-slate-600"
+            class="p-6 bg-slate-800 border border-slate-700 rounded-lg transition-all duration-200 hover:border-slate-600"
           >
             <div
               class="w-9 h-9 flex items-center justify-center bg-cyan-400/15 border border-cyan-400/20 rounded-md text-base mb-4"
@@ -598,7 +598,7 @@ console.log(result.data);`;
           </div>
 
           <div
-            class="p-6 bg-slate-800 border border-slate-700 rounded-lg transition-all duration-[0.2s] hover:border-slate-600"
+            class="p-6 bg-slate-800 border border-slate-700 rounded-lg transition-all duration-200 hover:border-slate-600"
           >
             <div
               class="w-9 h-9 flex items-center justify-center bg-cyan-400/15 border border-cyan-400/20 rounded-md text-base mb-4"
@@ -613,7 +613,7 @@ console.log(result.data);`;
           </div>
 
           <div
-            class="p-6 bg-slate-800 border border-slate-700 rounded-lg transition-all duration-[0.2s] hover:border-slate-600"
+            class="p-6 bg-slate-800 border border-slate-700 rounded-lg transition-all duration-200 hover:border-slate-600"
           >
             <div
               class="w-9 h-9 flex items-center justify-center bg-cyan-400/15 border border-cyan-400/20 rounded-md text-base mb-4"
@@ -628,7 +628,7 @@ console.log(result.data);`;
           </div>
 
           <div
-            class="p-6 bg-slate-800 border border-slate-700 rounded-lg transition-all duration-[0.2s] hover:border-slate-600"
+            class="p-6 bg-slate-800 border border-slate-700 rounded-lg transition-all duration-200 hover:border-slate-600"
           >
             <div
               class="w-9 h-9 flex items-center justify-center bg-cyan-400/15 border border-cyan-400/20 rounded-md text-base mb-4"
@@ -648,7 +648,7 @@ console.log(result.data);`;
       <section id="demo" class="py-20 border-b border-slate-700">
         <div class="mb-12">
           <div
-            class="text-[11px] tracking-[0.1em] text-cyan-400 mb-4 font-semibold"
+            class="text-[11px] tracking-widest text-cyan-400 mb-4 font-semibold"
           >
             // Interactive
           </div>
@@ -678,7 +678,7 @@ console.log(result.data);`;
                   id="url-input"
                   type="url"
                   bind:value={url}
-                  class="w-full px-3.5 py-3 bg-slate-800 border border-slate-700 rounded-md font-mono text-sm text-slate-50 transition-all duration-[0.15s] focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_0_3px_rgba(34,211,238,0.15)]"
+                  class="w-full px-3.5 py-3 bg-slate-800 border border-slate-700 rounded-md font-mono text-sm text-slate-50 transition-all duration-150 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_0_3px_rgba(34,211,238,0.15)]"
                   placeholder="https://example.com/product"
                 />
               </div>
@@ -692,7 +692,7 @@ console.log(result.data);`;
                 <select
                   id="task-select"
                   bind:value={taskType}
-                  class="w-full px-3.5 py-3 bg-slate-800 border border-slate-700 rounded-md font-mono text-sm text-slate-50 transition-all duration-[0.15s] focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_0_3px_rgba(34,211,238,0.15)] cursor-pointer"
+                  class="w-full px-3.5 py-3 bg-slate-800 border border-slate-700 rounded-md font-mono text-sm text-slate-50 transition-all duration-150 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_0_3px_rgba(34,211,238,0.15)] cursor-pointer"
                 >
                   <option value="extract">Extract Product Details</option>
                   <option value="compare">Compare Prices</option>
@@ -709,7 +709,7 @@ console.log(result.data);`;
                 <textarea
                   id="instructions-input"
                   bind:value={instructions}
-                  class="w-full px-3.5 py-3 bg-slate-800 border border-slate-700 rounded-md font-mono text-sm text-slate-50 transition-all duration-[0.15s] focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_0_3px_rgba(34,211,238,0.15)] min-h-[80px] resize-y"
+                  class="w-full px-3.5 py-3 bg-slate-800 border border-slate-700 rounded-md font-mono text-sm text-slate-50 transition-all duration-150 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_0_3px_rgba(34,211,238,0.15)] min-h-[80px] resize-y"
                   placeholder="What to extract..."
                 ></textarea>
               </div>
@@ -718,7 +718,7 @@ console.log(result.data);`;
                 type="button"
                 onclick={extract}
                 disabled={loading}
-                class="w-full px-5 py-3.5 bg-indigo-500 border-0 rounded-md font-mono text-sm font-semibold text-white cursor-pointer transition-all duration-[0.15s] hover:bg-indigo-600 hover:-translate-y-px active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-500 disabled:hover:translate-y-0"
+                class="w-full px-5 py-3.5 bg-indigo-500 border-0 rounded-md font-mono text-sm font-semibold text-white cursor-pointer transition-all duration-150 hover:bg-indigo-600 hover:-translate-y-px active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-500 disabled:hover:translate-y-0"
               >
                 {#if loading}
                   <span class="flex items-center justify-center gap-2">
@@ -766,10 +766,10 @@ console.log(result.data);`;
             >
               {#if output}
                 <pre
-                  class="text-slate-50 whitespace-pre-wrap break-words">{output}</pre>
+                  class="text-slate-50 whitespace-pre-wrap wrap-break-word">{output}</pre>
               {:else if error}
                 <pre
-                  class="text-amber-500 whitespace-pre-wrap break-words">Error: {error}</pre>
+                  class="text-amber-500 whitespace-pre-wrap wrap-break-word">Error: {error}</pre>
               {:else}
                 <span class="text-slate-400"
                   >// Click "Run Extraction" to start</span
@@ -784,7 +784,7 @@ console.log(result.data);`;
       <section id="code" class="py-20 border-b-0 border-slate-700">
         <div class="mb-12">
           <div
-            class="text-[11px] tracking-[0.1em] text-cyan-400 mb-4 font-semibold"
+            class="text-[11px] tracking-widest text-cyan-400 mb-4 font-semibold"
           >
             // Example
           </div>
@@ -805,7 +805,7 @@ console.log(result.data);`;
             <span class="text-[12px] text-slate-400">extract.ts</span>
             <button
               onclick={copyCode}
-              class="px-2.5 py-1 bg-slate-800 border border-slate-700 rounded font-mono text-[11px] text-slate-400 cursor-pointer transition-all duration-[0.15s] hover:text-slate-50 hover:border-slate-600"
+              class="px-2.5 py-1 bg-slate-800 border border-slate-700 rounded font-mono text-[11px] text-slate-400 cursor-pointer transition-all duration-150 hover:text-slate-50 hover:border-slate-600"
               >Copy</button
             >
           </div>
@@ -853,7 +853,7 @@ console.<span class="text-[#dcdcaa]">log</span>(result.data);
       <section id="pricing" class="py-20 border-b border-slate-700">
         <div class="mb-12">
           <div
-            class="text-[11px] tracking-[0.1em] text-cyan-400 mb-4 font-semibold"
+            class="text-[11px] tracking-widest text-cyan-400 mb-4 font-semibold"
           >
             // Pricing
           </div>
@@ -869,7 +869,9 @@ console.<span class="text-[#dcdcaa]">log</span>(result.data);
         <div class="bg-slate-800 border border-slate-700 rounded-lg p-8">
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             <div class="flex flex-col gap-2">
-              <label for="concurrent" class="text-[13px] text-slate-400 font-semibold"
+              <label
+                for="concurrent"
+                class="text-[13px] text-slate-400 font-semibold"
                 >Concurrent ralphs</label
               >
               <input
@@ -878,11 +880,13 @@ console.<span class="text-[#dcdcaa]">log</span>(result.data);
                 bind:value={concurrent}
                 min="1"
                 max="100"
-                class="w-full px-3.5 py-3 bg-slate-800 border border-slate-700 rounded-md font-mono text-sm text-slate-50 transition-all duration-[0.15s] focus:outline-none focus:border-cyan-400"
+                class="w-full px-3.5 py-3 bg-slate-800 border border-slate-700 rounded-md font-mono text-sm text-slate-50 transition-all duration-150 focus:outline-none focus:border-cyan-400"
               />
             </div>
             <div class="flex flex-col gap-2">
-              <label for="hours-per-day" class="text-[13px] text-slate-400 font-semibold"
+              <label
+                for="hours-per-day"
+                class="text-[13px] text-slate-400 font-semibold"
                 >Hours per day</label
               >
               <input
@@ -891,11 +895,13 @@ console.<span class="text-[#dcdcaa]">log</span>(result.data);
                 bind:value={hoursPerDay}
                 min="1"
                 max="24"
-                class="w-full px-3.5 py-3 bg-slate-800 border border-slate-700 rounded-md font-mono text-sm text-slate-50 transition-all duration-[0.15s] focus:outline-none focus:border-cyan-400"
+                class="w-full px-3.5 py-3 bg-slate-800 border border-slate-700 rounded-md font-mono text-sm text-slate-50 transition-all duration-150 focus:outline-none focus:border-cyan-400"
               />
             </div>
             <div class="flex flex-col gap-2">
-              <label for="tasks-per-hour" class="text-[13px] text-slate-400 font-semibold"
+              <label
+                for="tasks-per-hour"
+                class="text-[13px] text-slate-400 font-semibold"
                 >Tasks per hour</label
               >
               <input
@@ -904,11 +910,13 @@ console.<span class="text-[#dcdcaa]">log</span>(result.data);
                 bind:value={tasksPerHour}
                 min="1"
                 max="1000"
-                class="w-full px-3.5 py-3 bg-slate-800 border border-slate-700 rounded-md font-mono text-sm text-slate-50 transition-all duration-[0.15s] focus:outline-none focus:border-cyan-400"
+                class="w-full px-3.5 py-3 bg-slate-800 border border-slate-700 rounded-md font-mono text-sm text-slate-50 transition-all duration-150 focus:outline-none focus:border-cyan-400"
               />
             </div>
             <div class="flex flex-col gap-2">
-              <label for="iterations-per-task" class="text-[13px] text-slate-400 font-semibold"
+              <label
+                for="iterations-per-task"
+                class="text-[13px] text-slate-400 font-semibold"
                 >Avg iterations per task</label
               >
               <input
@@ -917,7 +925,7 @@ console.<span class="text-[#dcdcaa]">log</span>(result.data);
                 bind:value={iterationsPerTask}
                 min="1"
                 max="20"
-                class="w-full px-3.5 py-3 bg-slate-800 border border-slate-700 rounded-md font-mono text-sm text-slate-50 transition-all duration-[0.15s] focus:outline-none focus:border-cyan-400"
+                class="w-full px-3.5 py-3 bg-slate-800 border border-slate-700 rounded-md font-mono text-sm text-slate-50 transition-all duration-150 focus:outline-none focus:border-cyan-400"
               />
             </div>
           </div>
@@ -995,14 +1003,14 @@ console.<span class="text-[#dcdcaa]">log</span>(result.data);
           <a
             href="https://github.com/acoyfellow/ralphwiggums"
             target="_blank"
-            class="text-cyan-400 transition-opacity duration-[0.15s] hover:opacity-80"
+            class="text-cyan-400 transition-opacity duration-150 hover:opacity-80"
             >GitHub</a
           >
           <span style="margin: 0 8px; opacity: 0.3;">·</span>
           <a
             href="https://www.humanlayer.dev/blog/brief-history-of-ralph"
             target="_blank"
-            class="text-cyan-400 transition-opacity duration-[0.15s] hover:opacity-80"
+            class="text-cyan-400 transition-opacity duration-150 hover:opacity-80"
             >Origin Story</a
           >
         </p>
