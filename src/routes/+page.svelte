@@ -869,10 +869,11 @@ console.<span class="text-[#dcdcaa]">log</span>(result.data);
         <div class="bg-slate-800 border border-slate-700 rounded-lg p-8">
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             <div class="flex flex-col gap-2">
-              <label class="text-[13px] text-slate-400 font-semibold"
+              <label for="concurrent" class="text-[13px] text-slate-400 font-semibold"
                 >Concurrent ralphs</label
               >
               <input
+                id="concurrent"
                 type="number"
                 bind:value={concurrent}
                 min="1"
@@ -881,10 +882,11 @@ console.<span class="text-[#dcdcaa]">log</span>(result.data);
               />
             </div>
             <div class="flex flex-col gap-2">
-              <label class="text-[13px] text-slate-400 font-semibold"
+              <label for="hours-per-day" class="text-[13px] text-slate-400 font-semibold"
                 >Hours per day</label
               >
               <input
+                id="hours-per-day"
                 type="number"
                 bind:value={hoursPerDay}
                 min="1"
@@ -893,10 +895,11 @@ console.<span class="text-[#dcdcaa]">log</span>(result.data);
               />
             </div>
             <div class="flex flex-col gap-2">
-              <label class="text-[13px] text-slate-400 font-semibold"
+              <label for="tasks-per-hour" class="text-[13px] text-slate-400 font-semibold"
                 >Tasks per hour</label
               >
               <input
+                id="tasks-per-hour"
                 type="number"
                 bind:value={tasksPerHour}
                 min="1"
@@ -905,10 +908,11 @@ console.<span class="text-[#dcdcaa]">log</span>(result.data);
               />
             </div>
             <div class="flex flex-col gap-2">
-              <label class="text-[13px] text-slate-400 font-semibold"
+              <label for="iterations-per-task" class="text-[13px] text-slate-400 font-semibold"
                 >Avg iterations per task</label
               >
               <input
+                id="iterations-per-task"
                 type="number"
                 bind:value={iterationsPerTask}
                 min="1"
@@ -1095,9 +1099,6 @@ console.<span class="text-[#dcdcaa]">log</span>(result.data);
   }
   .animate-fade-in-up {
     animation: fadeInUp 0.6s ease;
-  }
-  .animate-glitch {
-    animation: glitch 0.3s ease-in-out;
   }
   .animate-glitch-scan {
     animation: glitch-scan 8s linear infinite;

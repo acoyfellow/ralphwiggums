@@ -46,3 +46,40 @@ async function getBrowserFromPool(requestId: string) {
     }
   };
 }
+
+export async function handleStart(request: Request): Promise<Response> {
+  return new Response(JSON.stringify({ success: true }), {
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+export async function handleInstruction(request: Request): Promise<Response> {
+  return new Response(JSON.stringify({ success: true }), {
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+export async function handleExtract(request: Request): Promise<Response> {
+  return new Response(JSON.stringify({ success: true }), {
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+export async function handleStop(): Promise<Response> {
+  return new Response(JSON.stringify({ success: true }), {
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+export async function handleHealth(): Promise<Response> {
+  return new Response(JSON.stringify({ status: "ok" }), {
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+export async function route(request: Request): Promise<Response> {
+  return new Response(JSON.stringify({ error: "Not found" }), {
+    status: 404,
+    headers: { "Content-Type": "application/json" },
+  });
+}

@@ -4,7 +4,7 @@
  */
 
 import { Container } from "@cloudflare/containers";
-import { handleStart, handleInstruction, handleExtract, handleStop, handleHealth, route } from "./server.js";
+import { handleStart, handleInstruction, handleExtract, handleStop, handleHealth, route } from "./server.ts";
 
 export class RalphContainer extends Container {
   defaultPort = 8081;
