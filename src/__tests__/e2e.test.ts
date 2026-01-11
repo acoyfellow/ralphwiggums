@@ -10,8 +10,7 @@ import { run } from "../index.js";
 
 const hasContainer = !!process.env.CONTAINER_URL;
 
-if (hasContainer) {
-describe("E2E - Real Browser Automation", () => {
+(hasContainer ? describe : describe.skip)("E2E - Real Browser Automation", () => {
   it("should navigate to example.com and extract title", { timeout: 30000 }, async () => {
 
     const result = await run("Go to https://example.com and get the page title", {
@@ -86,7 +85,7 @@ describe("E2E - Real Browser Automation", () => {
   });
 });
 
-  describe("E2E - Real Form Interaction", () => {
+  (hasContainer ? describe : describe.skip)("E2E - Real Form Interaction", () => {
     it("should navigate to a contact form page and extract form fields", { timeout: 30000 }, async () => {
 
       const result = await run(
@@ -111,4 +110,3 @@ describe("E2E - Real Browser Automation", () => {
       expect(result.success).toBe(false);
     });
   });
-}

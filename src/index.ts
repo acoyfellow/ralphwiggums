@@ -70,28 +70,28 @@ export interface RalphConfig {
 export class ValidationError extends Data.TaggedError("ValidationError")<{
   field: string;
   reason: string;
-}> {}
+}> { }
 
 export class MaxIterationsError extends Data.TaggedError("MaxIterationsError")<{
   maxIterations: number;
   requestId: string;
-}> {}
+}> { }
 
 export class TimeoutError extends Data.TaggedError("TimeoutError")<{
   duration: number;
   requestId: string;
-}> {}
+}> { }
 
 export class BrowserError extends Data.TaggedError("BrowserError")<{
   reason: string;
   requestId: string;
-}> {}
+}> { }
 
 export class RateLimitError extends Data.TaggedError("RateLimitError")<{
   retryAfter: number;
-}> {}
+}> { }
 
-export class UnauthorizedError extends Data.TaggedError("UnauthorizedError") {}
+export class UnauthorizedError extends Data.TaggedError("UnauthorizedError") { }
 
 class InternalError extends Data.TaggedError("InternalError") {
   constructor(
@@ -135,7 +135,7 @@ export function generateRequestId(): string {
 export function log(requestId: string, level: string, message: string, meta?: Record<string, unknown>) {
   const config = getConfig();
   if (!config.debug && level === "debug") return;
-  
+
   const entry: Record<string, unknown> = {
     timestamp: new Date().toISOString(),
     level,
@@ -143,7 +143,7 @@ export function log(requestId: string, level: string, message: string, meta?: Re
     message,
   };
   if (meta) entry.meta = meta;
-  
+
   if (level === "error") console.error(JSON.stringify(entry));
   else console.log(JSON.stringify(entry));
 }
@@ -164,18 +164,18 @@ const RATE_LIMIT_MAX = 60;
 function checkRateLimit(ip: string): void {
   const now = Date.now();
   const entry = rateLimitMap.get(ip);
-  
+
   if (!entry || now > entry.resetAt) {
     rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
     return;
   }
-  
+
   if (entry.count >= RATE_LIMIT_MAX) {
     throw new RateLimitError({ retryAfter: Math.ceil((entry.resetAt - now) / 1000) });
   }
-  
+
   entry.count++;
-  
+
   // Cleanup expired entries on-demand
   for (const [ip, entry] of rateLimitMap.entries()) {
     if (now > entry.resetAt) rateLimitMap.delete(ip);
@@ -208,11 +208,11 @@ export function getCircuitState(): CircuitState {
 function recordFailure() {
   circuitState.failureCount++;
   circuitState.lastFailure = Date.now();
-  
+
   if (circuitState.failureCount >= CIRCUIT_FAILURE_THRESHOLD) {
     circuitState.state = "open";
-    log("system", "warn", "Circuit breaker opened", { 
-      failures: circuitState.failureCount 
+    log("system", "warn", "Circuit breaker opened", {
+      failures: circuitState.failureCount
     });
   }
 }
@@ -271,18 +271,18 @@ export function getCheckpointStore(): CheckpointStore {
   return {
     async save(data: CheckpointData): Promise<void> {
       checkpointStore.set(data.checkpointId, data);
-      
+
       const taskCheckpoints = TASK_CHECKPOINTS.get(data.taskId) || [];
       if (!taskCheckpoints.includes(data.checkpointId)) {
         taskCheckpoints.push(data.checkpointId);
         TASK_CHECKPOINTS.set(data.taskId, taskCheckpoints);
       }
     },
-    
+
     async load(checkpointId: string): Promise<CheckpointData | null> {
       return checkpointStore.get(checkpointId) || null;
     },
-    
+
     async delete(checkpointId: string): Promise<void> {
       const data = checkpointStore.get(checkpointId);
       if (data) {
@@ -294,14 +294,14 @@ export function getCheckpointStore(): CheckpointStore {
         }
       }
     },
-    
+
     async list(taskId: string): Promise<CheckpointData[]> {
       const checkpointIds = TASK_CHECKPOINTS.get(taskId) || [];
       return checkpointIds
         .map(id => checkpointStore.get(id))
         .filter((c): c is CheckpointData => c !== undefined);
     },
-    
+
     async gc(): Promise<void> {
       const now = Date.now();
       for (const [id, data] of checkpointStore.entries()) {
@@ -427,7 +427,7 @@ export async function saveCheckpoint(
 ): Promise<string> {
   const checkpointId = `${taskId}-${iteration}`;
   const now = Date.now();
-  
+
   const data: CheckpointData = {
     checkpointId,
     taskId,
@@ -437,7 +437,7 @@ export async function saveCheckpoint(
     timestamp: now,
     expiresAt: now + CHECKPOINT_TTL,
   };
-  
+
   await getCheckpointStore().save(data);
   log(requestId, "debug", "Checkpoint saved", { checkpointId, iteration });
   return checkpointId;
@@ -454,7 +454,7 @@ function checkCircuitBreaker(): void {
       circuitState.state = "half-open";
       log("system", "info", "Circuit breaker half-open (testing recovery)");
     } else {
-      throw new BrowserError({ 
+      throw new BrowserError({
         reason: "Circuit breaker is open - container may be unhealthy",
         requestId: "system"
       });
@@ -521,19 +521,19 @@ async function containerFetch(
   body?: object
 ): Promise<any> {
   const containerUrl = getContainerUrl();
-  log(requestId, "debug", `containerFetch: ${path}`, { 
-    hasContainerFetch: !!_containerFetch, 
+  log(requestId, "debug", `containerFetch: ${path}`, {
+    hasContainerFetch: !!_containerFetch,
     hasContainerBinding: !!_containerBinding,
     hasContainerUrl: !!containerUrl,
-    containerUrl 
+    containerUrl
   });
-  
+
   // Use custom fetch if set (for testing)
   if (_containerFetch) {
     log(requestId, "debug", `Using custom containerFetch: ${path}`);
     return _containerFetch(path, body);
   }
-  
+
   // Local dev mode: use direct URL to container server
   if (containerUrl) {
     const url = `${containerUrl}${path}`;
@@ -544,14 +544,14 @@ async function containerFetch(
         headers: { "Content-Type": "application/json" },
         body: body ? JSON.stringify(body) : undefined,
       });
-      
+
       if (!res.ok) {
         const errorText = await res.text();
         log(requestId, "error", `containerFetch error: ${path}`, { status: res.status, error: errorText });
         recordFailure();
         throw new Error(`${path} failed (${res.status}): ${errorText}`);
       }
-      
+
       recordSuccess();
       return res.json();
     } catch (e) {
@@ -560,23 +560,23 @@ async function containerFetch(
       throw e;
     }
   }
-  
+
   // Check circuit breaker
   checkCircuitBreaker();
-  
+
   if (!_containerBinding) {
-    const error = new BrowserError({ 
+    const error = new BrowserError({
       reason: "Container binding not set - did you call setContainerBinding()?",
-      requestId 
+      requestId
     });
     log(requestId, "error", "No container binding", { reason: error.reason });
     throw error;
   }
-  
+
   try {
     const { getContainer, switchPort } = await import("@cloudflare/containers");
     const container = getContainer(_containerBinding, crypto.randomUUID());
-    
+
     const res = await container.fetch(
       switchPort(
         new Request(`http://container${path}`, {
@@ -587,14 +587,14 @@ async function containerFetch(
         8080
       )
     );
-    
+
     if (!res.ok) {
       const errorText = await res.text();
       log(requestId, "error", `containerFetch error: ${path}`, { status: res.status, error: errorText });
       recordFailure();
       throw new Error(`${path} failed (${res.status}): ${errorText}`);
     }
-    
+
     recordSuccess();
     return res.json();
   } catch (e) {
@@ -612,54 +612,39 @@ export function doThis(
   prompt: string,
   opts: RalphOptions = {},
   requestId: string = generateRequestId()
-): Effect.Effect<RalphResult, 
+): Effect.Effect<RalphResult,
   ValidationError | MaxIterationsError | TimeoutError | BrowserError | RateLimitError | InternalError,
   never
 > {
   return Effect.gen(function* () {
     const config = getConfig();
     log(requestId, "info", "Starting doThis");
-    
+
     const validatedPrompt = validateString(prompt, config.maxPromptLength, "prompt");
     const max = validatePositiveInt(opts.maxIterations, 10, "maxIterations");
     const timeout = validatePositiveInt(opts.timeout, config.requestTimeout, "timeout");
-    
-    // Acquire semaphore
-    yield* Effect.tryPromise({
-      try: () => acquireSemaphore(),
-      catch: (e) => new InternalError(requestId, "Semaphore error")
-    });
-    
-    // Release semaphore on exit (using try/finally pattern via Effect)
-    let released = false;
-    const release = () => {
-      if (!released) {
-        released = true;
-        releaseSemaphore();
-      }
-    };
-    
+
     const taskId = opts.resumeFrom?.split("-")[0] || crypto.randomUUID();
-    
-    try {
-      const checkpointId = `${taskId}-0`;
-      
-       const response = yield* Effect.timeout(
-         Effect.tryPromise({
-           try: () => containerFetch(requestId, "/do", {
-             prompt: validatedPrompt,
-             maxIterations: max
-           }),
-           catch: (e) => new BrowserError({
+    const checkpointId = `${taskId}-0`;
+
+    // Use Effect.acquireUseRelease for semaphore management
+    const taskExecution = Effect.gen(function* () {
+      const response = yield* Effect.timeout(
+        Effect.tryPromise({
+          try: () => containerFetch(requestId, "/do", {
+            prompt: validatedPrompt,
+            maxIterations: max
+          }),
+          catch: (e) => new BrowserError({
             reason: e instanceof Error ? e.message : "action failed",
-            requestId 
+            requestId
           })
         }),
         timeout
-      ).pipe(Effect.catchAll(() => 
+      ).pipe(Effect.catchAll(() =>
         Effect.fail(new TimeoutError({ duration: timeout, requestId }))
       ));
-      
+
       if (response?.success) {
         yield* Effect.ignore(
           Effect.tryPromise({
@@ -668,24 +653,34 @@ export function doThis(
           })
         );
         log(requestId, "info", "Task completed", { iterations: response.iterations || 1 });
-         return {
-           success: true,
-           message: response.promiseCompleted ? "Task completed via promise tag" : "Task completed",
-           data: response.data,
-           iterations: response.iterations || 1,
-           checkpointId,
-           requestId
-         };
+        return {
+          success: true,
+          message: response.promiseCompleted ? "Task completed via promise tag" : "Task completed",
+          data: response.data,
+          iterations: response.iterations || 1,
+          checkpointId,
+          requestId
+        } as RalphResult;
       }
-      
+
       log(requestId, "error", "Task failed", { error: response?.error });
-      return yield* Effect.fail(new BrowserError({ 
+      return yield* Effect.fail(new BrowserError({
         reason: response?.error || "Task failed",
-        requestId 
+        requestId
       }));
-    } finally {
-      release();
-    }
+    });
+
+    // Acquire semaphore, execute task, release semaphore (guaranteed cleanup)
+    const result = yield* Effect.acquireUseRelease(
+      Effect.tryPromise({
+        try: () => acquireSemaphore(),
+        catch: (e) => new InternalError(requestId, "Semaphore error")
+      }),
+      () => taskExecution,
+      () => Effect.sync(() => releaseSemaphore())
+    );
+
+    return result;
   });
 }
 
@@ -717,7 +712,7 @@ function createErrorResponse(error: unknown, requestId: string): ErrorResponse {
   // Handle Effect's FiberFailure wrapper
   const errorMessage = error instanceof Error ? error.message : String(error);
   const errorStack = error instanceof Error ? error.stack : "";
-  
+
   // Check for wrapped ValidationError
   if (errorMessage.includes("ValidationError")) {
     // Extract reason from message
@@ -794,21 +789,21 @@ export function createHandlers() {
       timestamp: new Date().toISOString(),
     });
   });
-  
+
   // Main execution endpoint
   app.post("/do", async (c) => {
     const requestId = c.req.header("x-request-id") || generateRequestId();
     const clientIp = c.req.header("cf-connecting-ip") || "unknown";
-    
+
     try {
       checkRateLimit(clientIp);
     } catch (e) {
       if (e instanceof RateLimitError) {
         log(requestId, "warn", "Rate limit exceeded", { ip: clientIp });
-        return c.json({ 
-          error: "Rate limit exceeded", 
-          tag: "RateLimitError", 
-          retryAfter: e.retryAfter 
+        return c.json({
+          error: "Rate limit exceeded",
+          tag: "RateLimitError",
+          retryAfter: e.retryAfter
         }, 429 as any);
       }
       throw e;
@@ -830,10 +825,10 @@ export function createHandlers() {
     } catch {
       return c.json({ error: "Invalid JSON", tag: "ValidationError" }, 400 as any);
     }
-    
+
     try {
       const result = await run(
-        String(body.prompt ?? ""), 
+        String(body.prompt ?? ""),
         body.options as RalphOptions | undefined,
         requestId
       );
@@ -849,16 +844,16 @@ export function createHandlers() {
       return c.json(errorResponse, getStatusFromTag(errorResponse.tag) as any);
     }
   });
-  
+
   // Resume from checkpoint
   app.post("/resume/:checkpointId", async (c) => {
     const requestId = c.req.header("x-request-id") || generateRequestId();
     const checkpointId = c.req.param("checkpointId");
-    
+
     if (!checkpointId || checkpointId.includes("..") || checkpointId.includes("/")) {
       return c.json({ error: "Invalid checkpoint ID", tag: "ValidationError" }, 400 as any);
     }
-    
+
     try {
       const result = await run("", { resumeFrom: checkpointId }, requestId);
       return c.json(result);
@@ -867,15 +862,15 @@ export function createHandlers() {
       return c.json(errorResponse, getStatusFromTag(errorResponse.tag) as any);
     }
   });
-  
+
   // Get status
   app.get("/status/:taskId", async (c) => {
-    return c.json({ 
+    return c.json({
       status: "unknown",
       activeRequests: getActiveRequestCount(),
       queueLength: requestQueue.length,
     });
   });
-  
+
   return app;
 }

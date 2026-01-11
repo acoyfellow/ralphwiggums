@@ -9,8 +9,10 @@
  */
 import { createHandlers, setContainerBinding, setContainerUrl } from "./index.js";
 import { CheckpointDO } from "./checkpoint-do.js";
+import { OrchestratorDO } from "./orchestrator/orchestrator-do.js";
 export { CheckpointDO };
 export { RalphContainer } from "../container/container.js";
+export { OrchestratorDO };
 export default {
     async fetch(request, env) {
         if (env.CONTAINER_URL && typeof env.CONTAINER_URL === "string") {

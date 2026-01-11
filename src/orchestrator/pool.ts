@@ -167,32 +167,30 @@ export function getPoolStatus(pool: BrowserPool) {
  * Check if a container is healthy by calling its health endpoint
  */
 function checkContainerHealth(containerUrl: string): Effect.Effect<boolean, PoolError, never> {
-  return Effect.tryPromise({
+  const healthCheck = Effect.tryPromise({
     try: async () => {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const response = await fetch(`${containerUrl}/health`);
 
-      try {
-        const response = await fetch(`${containerUrl}/health`, {
-          signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          return false;
-        }
-
-        const data = await response.json();
-        return data?.status === "healthy";
-      } catch {
-        clearTimeout(timeoutId);
-        console.warn(`Health check failed for ${containerUrl}`);
+      if (!response.ok) {
         return false;
       }
+
+      const data = await response.json();
+      return data?.status === "healthy";
     },
     catch: () => false
-  }).pipe(
+  });
+
+  return healthCheck.pipe(
+    // Use Effect.timeout instead of setTimeout
+    Effect.timeout("5 seconds"),
+    Effect.catchAll(() => 
+      Effect.succeed(false).pipe(
+        Effect.tap(() => Effect.sync(() => 
+          console.warn(`Health check failed for ${containerUrl}`)
+        ))
+      )
+    ),
     Effect.mapError(() => new PoolError({
       reason: `Health check failed for ${containerUrl}`
     }))

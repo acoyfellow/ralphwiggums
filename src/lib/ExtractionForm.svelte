@@ -21,11 +21,14 @@
       const result = await response.json();
 
       if (result.success) {
+        // @ts-ignore - Svelte 5 rune type inference limitation
         output = JSON.stringify(result.data, null, 2);
       } else {
+        // @ts-ignore - Svelte 5 rune type inference limitation
         error = result.message || 'Extraction failed';
       }
     } catch (e) {
+      // @ts-ignore - Svelte 5 rune type inference limitation
       error = e instanceof Error ? e.message : 'Network error';
     } finally {
       loading = false;

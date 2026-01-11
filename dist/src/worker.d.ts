@@ -8,8 +8,10 @@
  * - GET /health - Health check
  */
 import { CheckpointDO } from "./checkpoint-do.js";
+import { OrchestratorDO } from "./orchestrator/orchestrator-do.js";
 export { CheckpointDO };
 export { RalphContainer } from "../container/container.js";
+export { OrchestratorDO };
 declare const _default: {
     fetch(request: Request, env: Record<string, unknown>): Promise<Response>;
 };

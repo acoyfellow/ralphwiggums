@@ -55,58 +55,8 @@ jobs:
           GITHUB_SHA: ${{ github.sha }}
           ALCHEMY_CI_STATE_STORE_CHECK: false
 
-  npm-publish:
-    needs: test
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          registry-url: 'https://registry.npmjs.org'
-      - name: Install dependencies
-        run: bun install
-      - name: Build package
-        run: npm run build
-      - name: Check if version exists on npm
-        id: check-version
-        run: |
-          PACKAGE_VERSION=$(node -p "require('./package.json').version")
-          if npm view ralphwiggums@$PACKAGE_VERSION version 2>/dev/null; then
-            echo "Version $PACKAGE_VERSION already exists on npm"
-            echo "should_publish=false" >> $GITHUB_OUTPUT
-          else
-            echo "Version $PACKAGE_VERSION not found on npm, will publish"
-            echo "should_publish=true" >> $GITHUB_OUTPUT
-          fi
-      - name: Publish to NPM
-        if: steps.check-version.outputs.should_publish == 'true'
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - name: Verify NPM Publication
-        if: steps.check-version.outputs.should_publish == 'true'
-        run: |
-          echo "Waiting for npm to propagate..."
-          sleep 30
-          PACKAGE_VERSION=$(node -p "require('./package.json').version")
-          echo "Checking if ralphwiggums@$PACKAGE_VERSION is published..."
-          if npm view ralphwiggums@$PACKAGE_VERSION version 2>/dev/null; then
-            echo "✅ SUCCESS: ralphwiggums@$PACKAGE_VERSION published to npm!"
-            npm view ralphwiggums@$PACKAGE_VERSION
-          else
-            echo "❌ FAILED: Package not found on npm"
-            exit 1
-          fi
-
   release:
-    needs: npm-publish
+    needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:

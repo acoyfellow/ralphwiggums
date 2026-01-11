@@ -442,22 +442,10 @@ export function doThis(prompt, opts = {}, requestId = generateRequestId()) {
         const validatedPrompt = validateString(prompt, config.maxPromptLength, "prompt");
         const max = validatePositiveInt(opts.maxIterations, 10, "maxIterations");
         const timeout = validatePositiveInt(opts.timeout, config.requestTimeout, "timeout");
-        // Acquire semaphore
-        yield* Effect.tryPromise({
-            try: () => acquireSemaphore(),
-            catch: (e) => new InternalError(requestId, "Semaphore error")
-        });
-        // Release semaphore on exit (using try/finally pattern via Effect)
-        let released = false;
-        const release = () => {
-            if (!released) {
-                released = true;
-                releaseSemaphore();
-            }
-        };
         const taskId = opts.resumeFrom?.split("-")[0] || crypto.randomUUID();
-        try {
-            const checkpointId = `${taskId}-0`;
+        const checkpointId = `${taskId}-0`;
+        // Use Effect.acquireUseRelease for semaphore management
+        const taskExecution = Effect.gen(function* () {
             const response = yield* Effect.timeout(Effect.tryPromise({
                 try: () => containerFetch(requestId, "/do", {
                     prompt: validatedPrompt,
@@ -488,10 +476,13 @@ export function doThis(prompt, opts = {}, requestId = generateRequestId()) {
                 reason: response?.error || "Task failed",
                 requestId
             }));
-        }
-        finally {
-            release();
-        }
+        });
+        // Acquire semaphore, execute task, release semaphore (guaranteed cleanup)
+        const result = yield* Effect.acquireUseRelease(Effect.tryPromise({
+            try: () => acquireSemaphore(),
+            catch: (e) => new InternalError(requestId, "Semaphore error")
+        }), () => taskExecution, () => Effect.sync(() => releaseSemaphore()));
+        return result;
     });
 }
 // ============================================================================
