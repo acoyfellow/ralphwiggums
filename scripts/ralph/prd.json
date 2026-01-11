@@ -314,26 +314,28 @@
        "verification": "streaming.ts created with TaskEvent types, formatSseEvent helper, createTaskEventStream using Stream.async, createHeartbeatStream using Stream.repeatEffect with Effect.sleep, mergeWithHeartbeat for combining streams, StreamingServiceImpl for listener management. handlers.ts updated with GET /orchestrator/tasks/:taskId/stream endpoint using SSE with proper Content-Type, Cache-Control, heartbeat events every 5s, listener limit check (max 10). TypeScript compiles without errors, all Effect-based with no raw promises.",
        "completed_at": "2026-01-11T13:00:00Z"
      },
-    {
-      "id": "015",
-      "title": "Implement auto-scaling logic for browser pool",
-      "status": "pending",
-      "priority": "P2",
-      "description": "Add intelligent pool scaling based on queue depth and browser utilization. **MUST use Effect for all async operations, Effect.sleep for delays.**",
-      "acceptance_criteria": [
-        "Auto-scaling monitors queue depth and pool utilization",
-        "Scale up when: queue depth > available browsers * 2",
-        "Scale down when: queue depth = 0 and utilization < 50% for 5 minutes",
-        "Scaling respects min/max pool size limits",
-        "Scale operations use Effect for resource management",
-        "Scaling decisions logged for observability",
-        "Manual scaling via API still works (POST /orchestrator/scale)",
-        "**NO setTimeout, NO raw promises - Effect only**"
-      ],
-       "dependencies": ["020"],
-      "files_to_modify": ["src/orchestrator/pool.ts", "src/orchestrator/dispatcher.ts"],
-      "verification": "Pool scales up when queue is full, scales down when idle, respects limits, Effect.sleep used for delays"
-    },
+     {
+       "id": "015",
+       "title": "Implement auto-scaling logic for browser pool",
+       "status": "completed",
+       "priority": "P2",
+       "description": "Add intelligent pool scaling based on queue depth and browser utilization. **MUST use Effect for all async operations, Effect.sleep for delays.**",
+       "acceptance_criteria": [
+         "Auto-scaling monitors queue depth and pool utilization",
+         "Scale up when: queue depth > available browsers * 2",
+         "Scale down when: queue depth = 0 and utilization < 50% for 5 minutes",
+         "Scaling respects min/max pool size limits",
+         "Scale operations use Effect for resource management",
+         "Scaling decisions logged for observability",
+         "Manual scaling via API still works (POST /orchestrator/scale)",
+         "**NO setTimeout, NO raw promises - Effect only**"
+       ],
+        "dependencies": ["020"],
+       "files_to_modify": ["src/orchestrator/pool.ts", "src/orchestrator/orchestrator-do.ts"],
+       "new_files": [],
+       "verification": "Auto-scaling implemented in pool.ts: AutoScalingConfig interface with minSize(1), maxSize(20), scaleUpThreshold(2), scaleDownThreshold(0.5), scaleDownDelayMs(300000), checkIntervalMs(10000). scalePoolUp() adds browsers using Effect.all for concurrent creation, scalePoolDown() removes available/unhealthy browsers. startAutoScaling() runs continuous loop using Effect.gen with Effect.sleep for delays, monitors queue via scheduler.getTasks('pending'), scales up when queue > available*2, scales down when idle for 5min with <50% utilization. Integrated with orchestrator-do.ts constructor. All operations Effect-based with no raw promises or setTimeout.",
+       "completed_at": "2026-01-11T13:30:00Z"
+     },
      {
        "id": "016",
        "title": "Fix container authentication in CI/CD deployment",
@@ -433,6 +435,6 @@
        "notes": "Container currently runs full ralph-loop internally, orchestrator wants external control for checkpointing"
      }
   ],
-    "completed": ["001", "002", "003", "004", "005", "006", "007", "008", "009", "009.1", "010", "011", "012", "013", "014", "016", "017", "018", "019", "020"],
+    "completed": ["001", "002", "003", "004", "005", "006", "007", "008", "009", "009.1", "010", "011", "012", "013", "014", "015", "016", "017", "018", "019", "020"],
    "next_story_id": "021"
 }

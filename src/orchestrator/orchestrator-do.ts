@@ -25,7 +25,7 @@ import type {
   OrchestratorError,
 } from "./types.js";
 import { SchedulerService, SchedulerServiceTag } from "./types.js";
-import { createPool, type BrowserPool, type BrowserInstance } from "./pool.js";
+import { createPool, type BrowserPool, type BrowserInstance, startAutoScaling } from "./pool.js";
 import { loadSessionState, saveSessionState, completeSessionWithPromise } from "./session.js";
 import { dispatchTasks, type DispatcherError } from "./dispatcher.js";
 import { createOrchestratorHandlers } from "./handlers.js";
@@ -58,6 +58,26 @@ export class OrchestratorDO implements DurableObject {
 
     // Start the dispatch loop for continuous task processing
     this.startDispatchLoop();
+
+    // Start auto-scaling for dynamic pool management
+    this.startAutoScalingLoop();
+  }
+
+  /**
+   * Start the auto-scaling loop for dynamic pool sizing
+   */
+  private startAutoScalingLoop(): void {
+    const runAutoScaling = async () => {
+      try {
+        await Effect.runPromise(
+          startAutoScaling(this.browserPool, this.scheduler)
+        );
+      } catch (error) {
+        console.error("Auto-scaling loop error:", error instanceof Error ? error.message : String(error));
+      }
+    };
+
+    runAutoScaling();
   }
 
   /**

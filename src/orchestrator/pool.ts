@@ -8,6 +8,7 @@
 
 import { Effect, Data } from "effect";
 import type { BrowserInstance, BrowserPool, OrchestratorDOState } from "./types.js";
+import type { ReliableScheduler } from "ironalarm";
 
 // ============================================================================
 // Errors
@@ -152,6 +153,226 @@ export function getPoolStatus(pool: BrowserPool) {
     busy: pool.instances.filter(i => i.status === "busy").length,
     unhealthy: pool.instances.filter(i => i.status === "unhealthy").length,
   };
+}
+
+// ============================================================================
+// Auto-scaling
+// ============================================================================
+
+export interface AutoScalingConfig {
+  minSize: number;
+  maxSize: number;
+  scaleUpThreshold: number; // Queue depth > available * scaleUpThreshold triggers scale up
+  scaleDownThreshold: number; // Utilization < scaleDownThreshold triggers scale down
+  scaleDownDelayMs: number; // How long to wait before scaling down
+  checkIntervalMs: number; // How often to check for scaling decisions
+}
+
+const defaultConfig: AutoScalingConfig = {
+  minSize: 1,
+  maxSize: 20,
+  scaleUpThreshold: 2, // Queue > available * 2
+  scaleDownThreshold: 0.5, // Utilization < 50%
+  scaleDownDelayMs: 300000, // 5 minutes
+  checkIntervalMs: 10000, // 10 seconds
+};
+
+export class ScalingError extends Data.TaggedError("ScalingError")<{
+  reason: string;
+}> {}
+
+/**
+ * Add a new browser instance to the pool
+ */
+export function scalePoolUp(
+  pool: BrowserPool,
+  count: number = 1
+): Effect.Effect<number, ScalingError, never> {
+  return Effect.gen(function* () {
+    const currentSize = pool.instances.length;
+    const newSize = Math.min(currentSize + count, pool.maxSize);
+    const actualAdded = newSize - currentSize;
+
+    if (actualAdded === 0) {
+      return 0;
+    }
+
+    const createBrowsers = Array.from({ length: actualAdded }, (_, index) =>
+      createBrowserInstance(`browser-${currentSize + index}`)
+    );
+
+    const newInstances = yield* Effect.all(createBrowsers, { concurrency: actualAdded }).pipe(
+      Effect.mapError(error => new ScalingError({ reason: `Failed to create browsers: ${error.reason}` }))
+    );
+
+    for (const instance of newInstances) {
+      pool.instances.push(instance);
+    }
+
+    pool.availableCount += actualAdded;
+
+    console.log(`Pool scaled up: +${actualAdded} browsers (size: ${pool.instances.length})`);
+    return actualAdded;
+  });
+}
+
+/**
+ * Remove unhealthy/available browser instances from the pool
+ */
+export function scalePoolDown(
+  pool: BrowserPool,
+  count: number = 1,
+  minSize: number = defaultConfig.minSize
+): Effect.Effect<number, ScalingError, never> {
+  return Effect.gen(function* () {
+    const currentSize = pool.instances.length;
+    const newSize = Math.max(currentSize - count, minSize);
+    const actualRemoved = currentSize - newSize;
+
+    if (actualRemoved === 0) {
+      return 0;
+    }
+
+    const availableToRemove = pool.instances
+      .filter(i => i.status === "available")
+      .slice(0, actualRemoved);
+
+    const unhealthyToRemove = pool.instances
+      .filter(i => i.status === "unhealthy" && !availableToRemove.includes(i))
+      .slice(0, actualRemoved - availableToRemove.length);
+
+    const toRemove = [...availableToRemove, ...unhealthyToRemove].slice(0, actualRemoved);
+
+    // Close browser resources
+    for (const instance of toRemove) {
+      yield* Effect.sync(() => {
+        instance.page?.close().catch(() => {});
+        instance.context?.close().catch(() => {});
+        instance.browser?.close().catch(() => {});
+      });
+
+      const idx = pool.instances.indexOf(instance);
+      if (idx > -1) {
+        pool.instances.splice(idx, 1);
+      }
+      if (instance.status === "available") {
+        pool.availableCount--;
+      }
+    }
+
+    console.log(`Pool scaled down: -${toRemove.length} browsers (size: ${pool.instances.length})`);
+    return toRemove.length;
+  });
+}
+
+/**
+ * Check if pool should scale up based on queue depth
+ */
+function shouldScaleUp(
+  queueDepth: number,
+  availableBrowsers: number,
+  config: AutoScalingConfig
+): boolean {
+  if (availableBrowsers === 0 && queueDepth > 0) {
+    return true; // Always scale up if there are tasks but no available browsers
+  }
+  return queueDepth > availableBrowsers * config.scaleUpThreshold;
+}
+
+/**
+ * Check if pool should scale down based on utilization
+ */
+function shouldScaleDown(
+  queueDepth: number,
+  busyBrowsers: number,
+  totalBrowsers: number,
+  idleTimeMs: number,
+  config: AutoScalingConfig
+): boolean {
+  // Only scale down if queue is empty
+  if (queueDepth > 0) {
+    return false;
+  }
+
+  // Check utilization
+  const utilization = totalBrowsers > 0 ? busyBrowsers / totalBrowsers : 0;
+  if (utilization >= config.scaleDownThreshold) {
+    return false;
+  }
+
+  // Must be idle for the configured delay
+  return idleTimeMs >= config.scaleDownDelayMs;
+}
+
+/**
+ * Auto-scaling loop that monitors queue and adjusts pool size
+ * Uses Effect.sleep for delays, no setTimeout
+ */
+export function startAutoScaling(
+  pool: BrowserPool,
+  scheduler: ReliableScheduler,
+  config: Partial<AutoScalingConfig> = {}
+): Effect.Effect<void, never, never> {
+  const finalConfig = { ...defaultConfig, ...config };
+
+  let lastActivityTime = Date.now();
+  let scalingInProgress = false;
+
+  const loop: Effect.Effect<void, never, never> = Effect.gen(function* () {
+    yield* Effect.sleep(finalConfig.checkIntervalMs);
+
+    if (scalingInProgress) {
+      return loop;
+    }
+
+    const tasks = yield* scheduler.getTasks("pending");
+    const queueDepth = tasks.length;
+    const status = getPoolStatus(pool);
+    const totalBrowsers = status.size;
+    const busyBrowsers = status.busy;
+    const availableBrowsers = status.available;
+
+    if (shouldScaleUp(queueDepth, availableBrowsers, finalConfig)) {
+      const canAdd = finalConfig.maxSize - totalBrowsers;
+      if (canAdd > 0) {
+        scalingInProgress = true;
+        const toAdd = Math.min(Math.ceil(queueDepth / 2), canAdd);
+        yield* scalePoolUp(pool, toAdd).pipe(
+          Effect.catchAll(error => {
+            console.error(`Scale up failed: ${error.reason}`);
+            return Effect.succeed(0);
+          })
+        );
+        scalingInProgress = false;
+        lastActivityTime = Date.now();
+        return loop;
+      }
+    }
+
+    const idleTimeMs = Date.now() - lastActivityTime;
+    if (shouldScaleDown(queueDepth, busyBrowsers, totalBrowsers, idleTimeMs, finalConfig)) {
+      const canRemove = totalBrowsers - finalConfig.minSize;
+      if (canRemove > 0) {
+        scalingInProgress = true;
+        yield* scalePoolDown(pool, 1, finalConfig.minSize).pipe(
+          Effect.catchAll(error => {
+            console.error(`Scale down failed: ${error.reason}`);
+            return Effect.succeed(0);
+          })
+        );
+        scalingInProgress = false;
+        return loop;
+      }
+    }
+
+    if (queueDepth > 0 || busyBrowsers > 0) {
+      lastActivityTime = Date.now();
+    }
+
+    return loop;
+  });
+
+  return loop;
 }
 
 // ============================================================================
