@@ -1,6 +1,6 @@
 # ralphwiggums
 
-**Effect-first browser automation.** Give it a prompt, get a completed task.
+**Effect-first browser automation for Cloudflare Workers.** Give it a prompt, get a completed task.
 
 ```typescript
 import { run } from "ralphwiggums";
@@ -32,7 +32,7 @@ Learn more about Ralph Loops and Geoffrey's work on [his blog](https://ghuntley.
 
 ## Architecture
 
-ralphwiggums uses a **three-tier architecture** for scalable browser automation:
+ralphwiggums uses a **three-tier Cloudflare Workers architecture** for scalable browser automation:
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -138,8 +138,11 @@ try {
 
 ## Installation
 
+**ralphwiggums requires Cloudflare Workers infrastructure.**
+
 ```bash
-npm install ralphwiggums
+# Install ralphwiggums and required Cloudflare peer dependencies
+npm install ralphwiggums @cloudflare/containers @cloudflare/workers-types
 ```
 
 **Note**: All examples work in TypeScript. Types are included in the package.
@@ -147,6 +150,10 @@ npm install ralphwiggums
 ## Prerequisites
 
 - **Node.js 18+** required
+- **Cloudflare Workers** - This package is built for Cloudflare Workers and requires:
+  - `@cloudflare/containers` (peer dependency)
+  - `@cloudflare/workers-types` (peer dependency)
+  - Cloudflare account with Workers enabled
 - **AI Provider** required for browser automation:
   - **OpenCode Zen** - Requires `ZEN_API_KEY`
   - Model: `claude-sonnet-4-5-20250929`
@@ -154,9 +161,9 @@ npm install ralphwiggums
 
 ## Quick Start
 
-1. **Install the package:**
+1. **Install the package and Cloudflare dependencies:**
    ```bash
-   npm install ralphwiggums
+   npm install ralphwiggums @cloudflare/containers @cloudflare/workers-types
    ```
 
 2. **Set up environment variables:**
@@ -354,6 +361,8 @@ RALPH_MAX_CONCURRENT=10  # Allow 10 concurrent requests
 
 ### Prerequisites
 
+- **Cloudflare account** with Workers enabled
+- **Cloudflare peer dependencies** installed: `@cloudflare/containers`, `@cloudflare/workers-types`
 - OpenCode Zen API key (`ZEN_API_KEY`)
 - Alchemy CLI installed (for infrastructure management)
 

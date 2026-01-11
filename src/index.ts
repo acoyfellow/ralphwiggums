@@ -685,16 +685,24 @@ export function doThis(
         }
 
         // Task succeeded but no promise tag - check if we should continue iterating
-        if (currentIteration < opts.maxIterations!) {
-          // More iterations available - save checkpoint and signal to continue
+        if (currentIteration < max) {
+          // More iterations available - save checkpoint and return continuation signal
           yield* Effect.ignore(
             Effect.tryPromise({
               try: () => saveCheckpoint(requestId, taskId, currentIteration),
               catch: () => undefined
             })
           );
-          log(requestId, "info", "Iteration completed, continuing to next iteration", { current: currentIteration, max: opts.maxIterations });
-          // Will be handled by orchestrator for next iteration
+          log(requestId, "info", "Iteration completed, checkpoint saved for resume", { current: currentIteration, max: opts.maxIterations });
+          return {
+            success: true,
+            message: "Task completed",
+            data: response.data,
+            iterations: response.iterations || currentIteration,
+            checkpointId,
+            requestId,
+            canResume: true
+          } as RalphResult;
         } else {
           // Reached max iterations without promise tag
           log(requestId, "info", "Task completed after max iterations", { iterations: currentIteration });
