@@ -57,6 +57,11 @@ export const POST: RequestHandler = async ({ request, platform }) => {
       if (apiKey) {
         headers['X-Api-Key'] = apiKey;
       }
+      // Pass ZEN_API_KEY via header for container authentication
+      const zenApiKey = (platform?.env as any)?.ZEN_API_KEY as string | undefined;
+      if (zenApiKey) {
+        headers['X-Zen-Api-Key'] = zenApiKey;
+      }
       workerResponse = await platform!.env!.WORKER.fetch(workerUrl, {
         method: 'POST',
         headers,

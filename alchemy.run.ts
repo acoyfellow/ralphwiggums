@@ -62,7 +62,8 @@ const worker = await Worker(`${project}-api`, {
     CONTAINER: browserContainer,
     ORCHESTRATOR: orchestratorDO,
     RALPH_API_KEY: process.env.RALPH_API_KEY ?? "",
-    CONTAINER_URL: process.env.CONTAINER_URL ?? "http://localhost:8081",
+    // Only set CONTAINER_URL for non-prod environments
+    ...(isProd ? {} : { CONTAINER_URL: process.env.CONTAINER_URL ?? "http://localhost:8081" }),
   },
   // Use preview URL for non-prod stages if no domain is set
   url: !isProd && !apiDomain,

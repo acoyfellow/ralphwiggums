@@ -415,26 +415,37 @@
        "notes": "Container now performs single attempts, orchestrator controls total iterations for external checkpointing and resumability"
      },
      {
-       "id": "020",
-       "title": "Clarify iteration control ownership between container and orchestrator",
+       "id": "021",
+       "title": "Implement pause and wait feature for human decision-making",
        "status": "pending",
-       "priority": "P0",
-       "description": "Resolve who controls iterations: container (internal ralph-loop) or orchestrator (external checkpointing). Currently both systems implement iteration logic.",
+       "priority": "P1",
+       "description": "Add ability for Ralph loop to pause mid-execution and wait for external input (human decision, webhook, notification). Enables 'call-a-friend' pattern where tasks can pause and request human help before continuing. **MUST use Effect for all async operations, Effect.sleep for polling, no new runtime dependencies required.**",
        "acceptance_criteria": [
-         "Clear ownership decision: container handles iterations OR orchestrator handles iterations",
-         "No dual iteration logic causing conflicts",
-         "Checkpoint/resume works with chosen approach",
-         "Promise tag detection integrates with iteration control",
-         "Session state management works correctly",
-         "API contracts defined between container and orchestrator"
+         "SessionState extended with pause fields: paused, pauseReason, pauseRequestedAt, pauseResumeToken, pauseTimeout",
+         "pauseSession() function saves pause state via SchedulerService.checkpoint() - returns Effect",
+         "resumeSession() function validates token, checks timeout, clears pause state, re-queues task - returns Effect",
+         "Pause detection: regex pattern <pause>REASON</pause> detected in task responses (similar to promise tag)",
+         "POST /orchestrator/tasks/:taskId/resume endpoint accepts resumeToken and resumes paused task",
+         "Dispatcher skips paused tasks (only dispatches non-paused tasks from queue)",
+         "Timeout handling: paused tasks auto-cancel after pauseTimeout expires (default 1 hour)",
+         "Resume token validation prevents unauthorized task resumption",
+         "Pause state persisted via ironalarm checkpoints (same as session state)",
+         "Task can be paused and resumed multiple times during execution",
+         "**NO new runtime dependencies - uses existing Effect, ironalarm, Hono**",
+         "**NO raw promises, NO try/catch - Effect only, all operations use Effect.gen or Effect.runPromise()**"
        ],
-       "dependencies": ["018", "019"],
-       "files_to_modify": ["container/server.ts", "src/orchestrator/session.ts", "src/orchestrator/orchestrator-do.ts"],
+       "dependencies": ["011", "012", "013"],
        "new_files": [],
-       "verification": "Single source of truth for iteration control, no conflicts between systems",
-       "notes": "Container currently runs full ralph-loop internally, orchestrator wants external control for checkpointing"
+       "files_to_modify": [
+         "src/orchestrator/types.ts",
+         "src/orchestrator/session.ts",
+         "src/orchestrator/handlers.ts",
+         "src/orchestrator/dispatcher.ts",
+         "src/orchestrator/orchestrator-do.ts"
+       ],
+       "verification": "SessionState includes pause fields, pauseSession/resumeSession functions implemented with Effect, pause tag detection works in task responses, /resume endpoint accepts tokens and resumes tasks, dispatcher skips paused tasks, timeout handling works, pause state persists across DO evictions, TypeScript compiles without errors, all operations Effect-based"
      }
   ],
     "completed": ["001", "002", "003", "004", "005", "006", "007", "008", "009", "009.1", "010", "011", "012", "013", "014", "015", "016", "017", "018", "019", "020"],
-   "next_story_id": "021"
+   "next_story_id": "022"
 }
