@@ -293,26 +293,27 @@
        "completed_at": "2026-01-11T08:49:43Z"
      },
     {
-      "id": "014",
-      "title": "Add WebSocket streaming for task events",
-      "status": "pending",
-      "priority": "P1",
-      "description": "Implement WebSocket/SSE streaming for real-time task status updates using Effect.Stream. **MUST use Effect.Stream for event emission.**",
-      "acceptance_criteria": [
-        "src/orchestrator/streaming.ts created with Effect.Stream",
-        "GET /orchestrator/tasks/:taskId/stream - SSE endpoint for task events",
-        "Task events include: queued, running, completed, failed, checkpoint",
-        "Stream uses Effect.Stream.async for event emission",
-        "Stream automatically closes on task completion/failure",
-        "Events formatted as Server-Sent Events (text/event-stream)",
-        "Client can subscribe to task progress in real-time",
-        "**NO raw promises, NO setTimeout - Effect.Stream only**"
-      ],
-      "dependencies": ["013"],
-      "new_files": ["src/orchestrator/streaming.ts"],
-      "files_to_modify": ["src/orchestrator/handlers.ts"],
-      "verification": "SSE stream works, events emitted on task updates, client receives real-time updates, Effect.Stream used"
-    },
+       "id": "014",
+       "title": "Add WebSocket streaming for task events",
+       "status": "completed",
+       "priority": "P1",
+       "description": "Implement WebSocket/SSE streaming for real-time task status updates using Effect.Stream. **MUST use Effect.Stream for event emission.**",
+       "acceptance_criteria": [
+         "src/orchestrator/streaming.ts created with Effect.Stream",
+         "GET /orchestrator/tasks/:taskId/stream - SSE endpoint for task events",
+         "Task events include: queued, running, completed, failed, checkpoint",
+         "Stream uses Effect.Stream.async for event emission",
+         "Stream automatically closes on task completion/failure",
+         "Events formatted as Server-Sent Events (text/event-stream)",
+         "Client can subscribe to task progress in real-time",
+         "**NO raw promises, NO setTimeout - Effect.Stream only**"
+       ],
+       "dependencies": ["013"],
+       "new_files": ["src/orchestrator/streaming.ts"],
+       "files_to_modify": ["src/orchestrator/handlers.ts"],
+       "verification": "streaming.ts created with TaskEvent types, formatSseEvent helper, createTaskEventStream using Stream.async, createHeartbeatStream using Stream.repeatEffect with Effect.sleep, mergeWithHeartbeat for combining streams, StreamingServiceImpl for listener management. handlers.ts updated with GET /orchestrator/tasks/:taskId/stream endpoint using SSE with proper Content-Type, Cache-Control, heartbeat events every 5s, listener limit check (max 10). TypeScript compiles without errors, all Effect-based with no raw promises.",
+       "completed_at": "2026-01-11T13:00:00Z"
+     },
     {
       "id": "015",
       "title": "Implement auto-scaling logic for browser pool",
@@ -432,6 +433,6 @@
        "notes": "Container currently runs full ralph-loop internally, orchestrator wants external control for checkpointing"
      }
   ],
-    "completed": ["001", "002", "003", "004", "005", "006", "007", "008", "009", "009.1", "010", "011", "012", "013", "016", "017", "018", "019", "020"],
+    "completed": ["001", "002", "003", "004", "005", "006", "007", "008", "009", "009.1", "010", "011", "012", "013", "014", "016", "017", "018", "019", "020"],
    "next_story_id": "021"
 }
