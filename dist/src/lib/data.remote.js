@@ -28,28 +28,6 @@ async function callContainerJSON(platform, endpoint, options) {
         throw error;
     }
 }
-// Query function for extraction operations
-export const extract = query('unchecked', async (req) => {
-    const platform = getRequestEvent().platform;
-    try {
-        return await callContainerJSON(platform, '/do', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                prompt: `Extract from ${req.url}: ${req.instructions || 'name, price, description'}`
-            })
-        });
-    }
-    catch (err) {
-        console.error('Extraction failed:', err);
-        return {
-            success: false,
-            message: err instanceof Error ? err.message : 'Unknown error'
-        };
-    }
-});
-// Additional query functions can be added here:
-// - getStatus(): Check container health
-// - getHistory(): Get past extractions
-// - etc.
+// This file can be used for future query functions if needed
+// Currently unused - all API calls are handled directly in route handlers
 //# sourceMappingURL=data.remote.js.map

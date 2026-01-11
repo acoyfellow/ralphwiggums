@@ -2,7 +2,6 @@
  * ralphwiggums - Durable Object Checkpoint Storage
  * Production-ready checkpoint persistence using Cloudflare Durable Objects.
  */
-import { Effect } from "effect";
 import type { DurableObjectState } from "@cloudflare/workers-types";
 declare const CheckpointError_base: new <A extends Record<string, any> = {}>(args: import("effect/Types").Equals<A, {}> extends true ? void : { readonly [P in keyof A as P extends "_tag" ? never : P]: A[P]; }) => import("effect/Cause").YieldableError & {
     readonly _tag: "CheckpointError";
@@ -67,16 +66,4 @@ export declare class CheckpointDO {
     private static list;
     private static gc;
 }
-/**
- * Save a checkpoint using Effect.
- */
-export declare function saveCheckpointEffect(checkpointId: string, taskId: string, iteration: number, url?: string, pageState?: string): Effect.Effect<void, CheckpointError, never>;
-/**
- * Load a checkpoint using Effect.
- */
-export declare function loadCheckpointEffect(checkpointId: string): Effect.Effect<CheckpointData | null, CheckpointError, never>;
-/**
- * List checkpoints for a task using Effect.
- */
-export declare function listCheckpointsEffect(taskId: string): Effect.Effect<CheckpointData[], CheckpointError, never>;
 export {};

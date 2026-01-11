@@ -1,6 +1,5 @@
 <script lang="ts">
-  // @ts-expect-error - Vite handles the import
-  import { version } from "$lib/version";
+
 
   let url = $state("https://amazon.com/dp/B09V3KXJPB");
   let taskType = $state("extract");
@@ -159,7 +158,7 @@ console.log(result.data);`;
       <div
         class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-800 border border-slate-700 rounded text-[11px] text-slate-400 before:content-[''] before:w-1.5 before:h-1.5 before:bg-green-500 before:rounded-full"
       >
-        v{version}
+        RalphWiggums
       </div>
     </div>
 
