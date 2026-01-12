@@ -48,6 +48,7 @@
     "check": "tsc --noEmit",
     "test": "bun test",
     "test:api": "DEMO_URL=https://ralphwiggums.coey.dev bun test src/__tests__/api.test.ts",
+    "test:demo": "bun run scripts/test-demo.ts",
     "deploy": "bun run alchemy deploy",
     "preview": "vite preview"
   },
