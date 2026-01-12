@@ -1,0 +1,16 @@
+# Code Owners
+# This file defines the primary maintainers and contributors to ralphwiggums
+#
+# GitHub's contributor count on the repository page includes ALL accounts with
+# any activity (commits, PRs, issues, comments), including bots.
+# This file documents the actual human contributors.
+#
+# Bots that appear as "contributors" (but are automated):
+# - agent-ralph <bot@coey.dev> - Ralph bot agent for automation
+# - copilot-swe-agent[bot] - GitHub Copilot bot
+
+# Primary Maintainer (Human)
+coeyman@gmail.com @jordan-coey
+
+# Repository Owner
+@acoyfellow

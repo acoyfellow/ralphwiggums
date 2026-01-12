@@ -6,9 +6,11 @@ const dev = process.env.NODE_ENV === 'development';
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
 	preprocess: vitePreprocess(),
-	kit: { 
-		adapter: dev ? alchemy() : adapter()
-  }
+	kit: {
+		// Use alchemy only for production deployment
+		// Local dev uses standard Cloudflare adapter
+		adapter: adapter()
+   }
 };
 
 export default config;
