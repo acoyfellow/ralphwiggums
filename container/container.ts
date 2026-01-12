@@ -9,6 +9,11 @@ import { handleStart, handleInstruction, handleExtract, handleStop, handleHealth
 export class RalphContainer extends Container {
   defaultPort = 8081;
 
+  envVars = {
+    // TODO: Use proper env var once worker env passing works
+    ANTHROPIC_API_KEY: "placeholder-key",
+  };
+
   async onRequest(request: Request): Promise<Response> {
     const url = new URL(request.url);
     const pathname = url.pathname;
