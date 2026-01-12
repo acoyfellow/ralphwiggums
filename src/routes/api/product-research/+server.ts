@@ -61,12 +61,17 @@ export const POST: RequestHandler = async ({ request, platform }) => {
       const zenApiKey = (platform?.env as any)?.ZEN_API_KEY as string | undefined;
       if (zenApiKey) {
         headers['X-Zen-Api-Key'] = zenApiKey;
+        console.log('[DEMO] Passing Zen API key to worker');
+      } else {
+        console.warn('[DEMO] No Zen API key available');
       }
+      console.log(`[DEMO] Calling worker at ${workerUrl}`);
       workerResponse = await platform!.env!.WORKER.fetch(workerUrl, {
         method: 'POST',
         headers,
         body: JSON.stringify(requestBody)
       });
+      console.log(`[DEMO] Worker response: ${workerResponse.status}`);
     }
 
     const result = await workerResponse.json();

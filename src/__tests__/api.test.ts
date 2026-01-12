@@ -2,6 +2,13 @@ import { test, expect } from 'bun:test';
 
 const DEMO_URL = process.env.DEMO_URL || 'http://localhost:3000';
 
+test('health check works', async () => {
+  const response = await fetch(`${DEMO_URL}/api/health`);
+  expect(response.status).toBe(200);
+  const result = await response.json();
+  expect(result.status).toBe('ok');
+});
+
 test('demo API returns success for simple extraction', async () => {
   const response = await fetch(`${DEMO_URL}/api/product-research`, {
     method: 'POST',
@@ -16,10 +23,10 @@ test('demo API returns success for simple extraction', async () => {
 
   expect(response.status).toBe(200);
   const result = await response.json();
-  // For now, accept the placeholder response
   expect(result.success).toBe(true);
   expect(result.data).toBeDefined();
   expect(typeof result.iterations).toBe('number');
+  expect(result.requestId).toBeDefined(); // Should have request tracing
 });
 
 test('demo API handles invalid URL', async () => {

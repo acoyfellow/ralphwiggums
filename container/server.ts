@@ -78,15 +78,16 @@ export async function handleHealth(): Promise<Response> {
 }
 
 export async function handleDo(request: Request): Promise<Response> {
-  console.log(`[CONTAINER] handleDo called`);
+  const requestId = request.headers.get('x-request-id') || crypto.randomUUID().slice(0, 8);
+  console.log(`[CONTAINER:${requestId}] handleDo called`);
 
   try {
     const body = await request.json();
-    console.log(`[CONTAINER] Request body:`, body);
+    console.log(`[CONTAINER:${requestId}] Request body:`, body);
     const { prompt, maxIterations = 5, timeout = 60000 } = body;
 
     if (!prompt) {
-      console.log(`[CONTAINER] No prompt provided`);
+      console.log(`[CONTAINER:${requestId}] No prompt provided`);
       return new Response(JSON.stringify({ success: false, message: "Prompt is required" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
@@ -95,33 +96,35 @@ export async function handleDo(request: Request): Promise<Response> {
 
     // Get API key from headers (passed by worker)
     const apiKey = request.headers.get('x-zen-api-key');
-    console.log(`[CONTAINER] API key present: ${!!apiKey}`);
+    console.log(`[CONTAINER:${requestId}] API key present: ${!!apiKey}`);
     if (!apiKey) {
-      console.log(`[CONTAINER] No API key in headers`);
+      console.log(`[CONTAINER:${requestId}] No API key in headers`);
       return new Response(JSON.stringify({ success: false, message: "API key required" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    console.log(`[CONTAINER] Starting Ralph loop for prompt: ${prompt}`);
+    console.log(`[CONTAINER:${requestId}] Starting Ralph loop for prompt: ${prompt}`);
     // TODO: Implement Ralph loop with Zen API and Stagehand
     // For now, basic implementation
     const result = await runRalphLoop(prompt, apiKey, maxIterations, timeout);
-    console.log(`[CONTAINER] Ralph loop result:`, result);
+    console.log(`[CONTAINER:${requestId}] Ralph loop result:`, result);
 
     return new Response(JSON.stringify({
       success: true,
       data: result,
-      iterations: 1
+      iterations: 1,
+      requestId
     }), {
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error(`[CONTAINER] Error in handleDo:`, error);
+    console.error(`[CONTAINER:${requestId}] Error in handleDo:`, error);
     return new Response(JSON.stringify({
       success: false,
-      message: error instanceof Error ? error.message : "Unknown error"
+      message: error instanceof Error ? error.message : "Unknown error",
+      requestId
     }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
@@ -131,11 +134,13 @@ export async function handleDo(request: Request): Promise<Response> {
 
 // Basic Ralph loop implementation
 async function runRalphLoop(prompt: string, apiKey: string, maxIterations: number, timeout: number): Promise<string> {
-  console.log(`[RALPH] Starting loop with prompt: ${prompt}`);
+  const requestId = crypto.randomUUID().slice(0, 8);
+  console.log(`[RALPH:${requestId}] Starting loop with prompt: ${prompt}`);
+
   // TODO: Implement full Ralph loop with Zen API and Stagehand
   // For now, return a mock successful result
   const result = "Page title: Example Domain, Main heading: Example Domain";
-  console.log(`[RALPH] Mock result: ${result}`);
+  console.log(`[RALPH:${requestId}] Mock result: ${result}`);
   return result;
 }
 

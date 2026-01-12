@@ -18,30 +18,32 @@ export { OrchestratorDO };
 
 export default {
   async fetch(request: Request, env: Record<string, unknown>): Promise<Response> {
-    console.log(`[WORKER] ${request.method} ${request.url}`);
+    const requestId = crypto.randomUUID().slice(0, 8);
+    console.log(`[WORKER:${requestId}] ${request.method} ${request.url}`);
 
     if (env.CONTAINER_URL && typeof env.CONTAINER_URL === "string") {
       setContainerUrl(env.CONTAINER_URL);
+      console.log(`[WORKER:${requestId}] Using container URL: ${env.CONTAINER_URL}`);
     } else if (env.CONTAINER) {
       setContainerBinding(env.CONTAINER);
-      console.log('[WORKER] Using container binding');
+      console.log(`[WORKER:${requestId}] Using container binding`);
     } else {
       setContainerUrl("http://localhost:8081");
-      console.log('[WORKER] Using localhost container');
+      console.log(`[WORKER:${requestId}] Using localhost container`);
     }
 
     if (env.ZEN_API_KEY && typeof env.ZEN_API_KEY === "string") {
       setZenApiKey(env.ZEN_API_KEY);
-      console.log('[WORKER] Zen API key configured');
+      console.log(`[WORKER:${requestId}] Zen API key configured`);
     }
 
     const app = createHandlers();
     try {
       const response = await app.fetch(request, env as any);
-      console.log(`[WORKER] Response: ${response.status}`);
+      console.log(`[WORKER:${requestId}] Response: ${response.status}`);
       return response;
     } catch (error) {
-      console.error('[WORKER] Error:', error);
+      console.error(`[WORKER:${requestId}] Error:`, error);
       throw error;
     }
   },
