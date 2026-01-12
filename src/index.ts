@@ -523,23 +523,58 @@ function getContainerUrl(): string | null {
 }
 
 async function containerFetch(
-  requestId: string,
   path: string,
-  body?: object
+  body?: object,
 ): Promise<any> {
   const containerUrl = getContainerUrl();
-  log(requestId, "debug", `containerFetch: ${path}`, {
-    hasContainerFetch: !!_containerFetch,
-    hasContainerBinding: !!_containerBinding,
-    hasContainerUrl: !!containerUrl,
-    containerUrl
-  });
-
-  // Use custom fetch if set (for testing)
-  if (_containerFetch) {
-    log(requestId, "debug", `Using custom containerFetch: ${path}`);
-    return _containerFetch(path, body);
+  if (containerUrl) {
+    // Local dev: direct HTTP call
+    console.log(`[CONTAINER] Local call to ${containerUrl}${path}`);
+    const response = await fetch(`${containerUrl}${path}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-zen-api-key": _zenApiKey || "",
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const result = await response.json();
+    console.log(`[CONTAINER] Local response: ${response.status}`, result);
+    return result;
   }
+
+  // Production: Cloudflare Container binding
+  try {
+    console.log(`[CONTAINER] Production call to container${path}`);
+    const { getContainer, switchPort } = await import("@cloudflare/containers");
+    const container = getContainer(_containerBinding, crypto.randomUUID());
+
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (_zenApiKey) {
+      headers["x-zen-api-key"] = _zenApiKey;
+    }
+    console.log(`[CONTAINER] Headers:`, headers);
+
+    const res = await container.fetch(
+      switchPort(
+        new Request(`http://container${path}`, {
+          method: "POST",
+          headers,
+          body: body ? JSON.stringify(body) : undefined,
+        }),
+        8081
+      )
+    );
+
+    console.log(`[CONTAINER] Production response: ${res.status}`);
+    const result = await res.json();
+    console.log(`[CONTAINER] Result:`, result);
+    return result;
+  } catch (error) {
+    console.error(`[CONTAINER] Error calling container:`, error);
+    throw error;
+  }
+}
 
   // Local dev mode: use direct URL to container server
   if (containerUrl) {

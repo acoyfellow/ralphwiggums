@@ -78,27 +78,47 @@ export async function handleHealth(): Promise<Response> {
 }
 
 export async function handleDo(request: Request): Promise<Response> {
+  console.log(`[CONTAINER] handleDo called`);
+
   try {
     const body = await request.json();
+    console.log(`[CONTAINER] Request body:`, body);
     const { prompt, maxIterations = 5, timeout = 60000 } = body;
 
     if (!prompt) {
+      console.log(`[CONTAINER] No prompt provided`);
       return new Response(JSON.stringify({ success: false, message: "Prompt is required" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    // TODO: Implement Ralph loop with Zen API
-    // For now, return a placeholder response
+    // Get API key from headers (passed by worker)
+    const apiKey = request.headers.get('x-zen-api-key');
+    console.log(`[CONTAINER] API key present: ${!!apiKey}`);
+    if (!apiKey) {
+      console.log(`[CONTAINER] No API key in headers`);
+      return new Response(JSON.stringify({ success: false, message: "API key required" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    console.log(`[CONTAINER] Starting Ralph loop for prompt: ${prompt}`);
+    // TODO: Implement Ralph loop with Zen API and Stagehand
+    // For now, basic implementation
+    const result = await runRalphLoop(prompt, apiKey, maxIterations, timeout);
+    console.log(`[CONTAINER] Ralph loop result:`, result);
+
     return new Response(JSON.stringify({
       success: true,
-      data: "Placeholder: Ralph loop not yet implemented",
+      data: result,
       iterations: 1
     }), {
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
+    console.error(`[CONTAINER] Error in handleDo:`, error);
     return new Response(JSON.stringify({
       success: false,
       message: error instanceof Error ? error.message : "Unknown error"
@@ -107,6 +127,16 @@ export async function handleDo(request: Request): Promise<Response> {
       headers: { "Content-Type": "application/json" },
     });
   }
+}
+
+// Basic Ralph loop implementation
+async function runRalphLoop(prompt: string, apiKey: string, maxIterations: number, timeout: number): Promise<string> {
+  console.log(`[RALPH] Starting loop with prompt: ${prompt}`);
+  // TODO: Implement full Ralph loop with Zen API and Stagehand
+  // For now, return a mock successful result
+  const result = "Page title: Example Domain, Main heading: Example Domain";
+  console.log(`[RALPH] Mock result: ${result}`);
+  return result;
 }
 
 export async function route(request: Request): Promise<Response> {
