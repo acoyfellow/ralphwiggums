@@ -19,19 +19,26 @@ export function setZenApiKey(key: string) {
   _zenApiKey = key;
 }
 
-function getContainerUrl(): string | null {
-  return _containerUrl;
+export function setContainerFetch(fetchFn: ((path: string, body?: object) => Promise<any>) | null) {
+  _containerFetch = fetchFn;
 }
 
-async function containerFetch(
+export async function containerFetch(
   path: string,
   body?: object,
 ): Promise<any> {
   const requestId = crypto.randomUUID().slice(0, 8);
-  const containerUrl = getContainerUrl();
+
+  if (_containerFetch) {
+    // Use provided fetch function (for testing)
+    console.log(`[CONTAINER:MOCK:${requestId}] Using mock fetch function`);
+    return _containerFetch(path, body);
+  }
+
+  const containerUrl = _containerUrl || "http://localhost:8081";
   if (containerUrl) {
     // Local dev: direct HTTP call
-    console.log(`[CONTAINER:${requestId}] Local call to ${containerUrl}${path}`);
+    console.log(`[CONTAINER:MOCK:${requestId}] Local call to ${containerUrl}${path}`);
     try {
       const response = await fetch(`${containerUrl}${path}`, {
         method: "POST",
@@ -43,47 +50,44 @@ async function containerFetch(
         body: body ? JSON.stringify(body) : undefined,
       });
       const result = await response.json();
-      console.log(`[CONTAINER:${requestId}] Local response: ${response.status}`, result);
+      console.log(`[CONTAINER:MOCK:${requestId}] Local response:`, result);
       return result;
     } catch (error) {
-      console.error(`[CONTAINER:${requestId}] Local fetch error:`, error);
+      console.error(`[CONTAINER:MOCK:${requestId}] Local fetch error:`, error);
       throw error;
     }
-  }
+  } else {
+    // Production: Cloudflare Container binding
+    console.log(`[CONTAINER:MOCK:${requestId}] Production call to container${path}`);
+    try {
+      const { getContainer, switchPort } = await import("@cloudflare/containers");
+      const container = getContainer(_containerBinding, crypto.randomUUID());
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        "x-request-id": requestId,
+      };
+      if (_zenApiKey) {
+        headers["x-zen-api-key"] = _zenApiKey;
+      }
+      console.log(`[CONTAINER:MOCK:${requestId}] Headers:`, headers);
 
-  // Production: Cloudflare Container binding
-  try {
-    console.log(`[CONTAINER:${requestId}] Production call to container${path}`);
-    const { getContainer, switchPort } = await import("@cloudflare/containers");
-    const container = getContainer(_containerBinding, crypto.randomUUID());
-
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      "x-request-id": requestId
-    };
-    if (_zenApiKey) {
-      headers["x-zen-api-key"] = _zenApiKey;
+      const res = await container.fetch(
+        switchPort(
+          new Request(`http://container${path}`, {
+            method: "POST",
+            headers,
+            body: body ? JSON.stringify(body) : undefined,
+          }),
+          8081
+        )
+      );
+      const result = await res.json();
+      console.log(`[CONTAINER:MOCK:${requestId}] Production response:`, result);
+      return result;
+    } catch (error) {
+      console.error(`[CONTAINER:MOCK:${requestId}] Production fetch error:`, error);
+      throw error;
     }
-    console.log(`[CONTAINER:${requestId}] Headers:`, headers);
-
-    const res = await container.fetch(
-      switchPort(
-        new Request(`http://container${path}`, {
-          method: "POST",
-          headers,
-          body: body ? JSON.stringify(body) : undefined,
-        }),
-        8081
-      )
-    );
-
-    console.log(`[CONTAINER:${requestId}] Production response: ${res.status}`);
-    const result = await res.json();
-    console.log(`[CONTAINER:${requestId}] Result:`, result);
-    return result;
-  } catch (error) {
-    console.error(`[CONTAINER:${requestId}] Error calling container:`, error);
-    throw error;
   }
 }
 
@@ -97,7 +101,7 @@ export async function doThis(prompt: string, options: any = {}): Promise<any> {
       prompt,
       maxIterations,
       timeout,
-      schema: schema ? JSON.stringify(schema) : undefined
+      schema: schema ? JSON.stringify(schema) : undefined,
     });
 
     console.log(`[RALPH] doThis result:`, result);
