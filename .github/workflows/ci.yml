@@ -1,0 +1,44 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+      - run: bun install
+      - run: bun run build
+      - run: bun test src/__tests__/api.test.ts
+      - run: bun run test:demo --url=http://localhost:3000 &
+        sleep 10 &&
+        curl -f http://localhost:3000/api/health
+
+  deploy-staging:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+      - run: bun run deploy
+      - run: sleep 30
+      - run: bun run test:demo --url=https://ralphwiggums-staging.coey.dev
+
+  deploy-prod:
+    needs: deploy-staging
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+      - run: STAGE=prod bun run alchemy deploy --env-file .env
+      - run: sleep 30
+      - run: bun run test:demo

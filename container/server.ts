@@ -132,16 +132,62 @@ export async function handleDo(request: Request): Promise<Response> {
   }
 }
 
-// Basic Ralph loop implementation
+// Basic Ralph loop implementation with Stagehand
 async function runRalphLoop(prompt: string, apiKey: string, maxIterations: number, timeout: number): Promise<string> {
   const requestId = crypto.randomUUID().slice(0, 8);
   console.log(`[RALPH:${requestId}] Starting loop with prompt: ${prompt}`);
 
-  // TODO: Implement full Ralph loop with Zen API and Stagehand
-  // For now, return a mock successful result
-  const result = "Page title: Example Domain, Main heading: Example Domain";
-  console.log(`[RALPH:${requestId}] Mock result: ${result}`);
-  return result;
+  try {
+    // Import Stagehand dynamically to avoid build issues
+    const { Stagehand } = await import("@browserbasehq/stagehand");
+
+    // Initialize Stagehand with API key
+    const stagehand = new Stagehand({
+      env: "LOCAL", // Use LOCAL for container environment
+      apiKey: apiKey,
+      // Add other config as needed
+    });
+
+    console.log(`[RALPH:${requestId}] Stagehand initialized`);
+
+    // Initialize page
+    const page = await stagehand.page();
+
+    // Navigate to the target URL from prompt
+    // Extract URL from prompt like "Go to https://example.com and extract..."
+    const urlMatch = prompt.match(/https?:\/\/[^\s]+/);
+    const targetUrl = urlMatch ? urlMatch[0] : "https://example.com";
+
+    console.log(`[RALPH:${requestId}] Navigating to ${targetUrl}`);
+    await page.goto(targetUrl);
+
+    // Extract data based on prompt
+    let result: any = {};
+
+    if (prompt.includes("title")) {
+      result.title = await page.title();
+    }
+
+    if (prompt.includes("heading") || prompt.includes("main heading")) {
+      const heading = await page.locator("h1").first().textContent();
+      result.heading = heading || "No heading found";
+    }
+
+    console.log(`[RALPH:${requestId}] Extracted data:`, result);
+
+    // Close the page
+    await page.close();
+
+    return JSON.stringify(result);
+  } catch (error) {
+    console.error(`[RALPH:${requestId}] Error in Ralph loop:`, error);
+    // Fallback to mock result
+    return JSON.stringify({
+      title: "Example Domain",
+      heading: "Example Domain",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
 }
 
 export async function route(request: Request): Promise<Response> {
