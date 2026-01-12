@@ -20,7 +20,7 @@ test('demo API returns success for simple extraction', async () => {
   expect(result.success).toBe(true);
   expect(result.data).toBeDefined();
   expect(typeof result.iterations).toBe('number');
-}).timeout(15000);
+});
 
 test('demo API handles invalid URL', async () => {
   const response = await fetch(`${DEMO_URL}/api/product-research`, {
@@ -37,4 +37,4 @@ test('demo API handles invalid URL', async () => {
   expect(response.status).toBe(400);
   const result = await response.json();
   expect(result.success).toBe(false);
-}).timeout(5000);
+});
