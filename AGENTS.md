@@ -31,14 +31,72 @@ node -e "const yaml = require('yaml'); const fs = require('fs'); yaml.parse(fs.r
 # Terminal 1: Container server
 cd /Users/jordan/Desktop/ralphwiggums && source .env && PORT=8081 bun run --hot container/server.ts
 
-# Terminal 2: Alchemy dev
+# Terminal 2: Dev server (Vite dev)
 cd /Users/jordan/Desktop/ralphwiggums && export CONTAINER_URL=http://localhost:8081 && bun run dev
 
 # Build & test
 bun run build && bun run check && bun test
 
 # Validate YAML
-python3 -c "import yaml; yaml.safe_load(open('.github/workflows/deploy.yml'))"
+node -e "const yaml = require('js-yaml'); const fs = require('fs'); yaml.load(fs.readFileSync('.github/workflows/ci.yml', 'utf8')); console.log('✅ Valid')"
+```
+
+## LOCAL DEV SETUP (Happy Path)
+
+**Step 1: Start container server**
+```bash
+cd /Users/jordan/Desktop/ralphwiggums
+source .env
+PORT=8081 bun run --hot container/server.ts
+```
+Expected output:
+```
+🚀 Container server starting on port 8081
+📋 Health check: http://localhost:8081/health
+📋 Do endpoint: http://localhost:8081/do
+```
+
+**Step 2: Start dev server**
+```bash
+cd /Users/jordan/Desktop/ralphwiggums
+export CONTAINER_URL=http://localhost:8081
+bun run dev
+```
+Expected output:
+```
+  VITE v7.3.1  ready in <time> ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+
+Using vars defined in .dev.vars
+```
+
+**Step 3: Verify both servers are running**
+```bash
+# Container health check
+curl http://localhost:8081/health
+# Expected: {"status":"ok"}
+
+# Dev server health check
+curl http://localhost:5173/api/health
+# Expected: {"status":"ok","timestamp":"2026-01-12T11:23:47.344Z"}
+
+# Dev server homepage
+curl http://localhost:5173
+# Expected: HTML page with "RalphWiggums" visible
+```
+
+**Step 4: Test demo UI**
+- Visit http://localhost:5173
+- Should see RalphWiggums homepage
+- Submit product research form with URL and instructions
+- Should get results
+
+**Step 5: Stop servers (when done)**
+```bash
+# In Terminal 1: Ctrl+C to stop container server
+# In Terminal 2: Ctrl+C to stop dev server
 ```
 
 ---
