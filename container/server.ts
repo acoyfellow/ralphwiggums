@@ -1,16 +1,4 @@
-/**
- * Container now acts as API wrapper for browser pool access.
- * Browsers are managed by the orchestrator pool, not created/destroyed here.
- */
-/**
- * Simple URL extraction from action text
- */
-function extractUrlFromAction(action: string): string | null {
-  // Look for URLs in common patterns
-  const urlRegex = /(https?:\/\/[^\s]+)/i;
-  const match = action.match(urlRegex);
-  return match ? match[1] : null;
-}
+
 
 async function getBrowserFromPool(requestId: string) {
   // TODO: Integrate with orchestrator pool to get browser instance
@@ -194,5 +182,49 @@ export async function route(request: Request): Promise<Response> {
   return new Response(JSON.stringify({ error: "Not found" }), {
     status: 404,
     headers: { "Content-Type": "application/json" },
+  });
+}
+
+// Local development server
+if (import.meta.main) {
+  const port = parseInt(process.env.PORT || "8081", 10);
+  console.log(`🚀 Container server starting on port ${port}`);
+  console.log(`📋 Health check: http://localhost:${port}/health`);
+  console.log(`📋 Do endpoint: http://localhost:${port}/do`);
+
+  Bun.serve({
+    port,
+    fetch: async (request: Request) => {
+      const url = new URL(request.url);
+      const pathname = url.pathname;
+      const method = request.method;
+
+      // Route to handlers
+      if (pathname === "/do" && method === "POST") {
+        return handleDo(request);
+      }
+
+      if (pathname === "/start" && method === "POST") {
+        return handleStart(request);
+      }
+
+      if (pathname === "/instruction" && method === "POST") {
+        return handleInstruction(request);
+      }
+
+      if (pathname === "/extract" && method === "POST") {
+        return handleExtract(request);
+      }
+
+      if (pathname === "/stop" && method === "POST") {
+        return handleStop();
+      }
+
+      if (pathname === "/health" && method === "GET") {
+        return handleHealth();
+      }
+
+      return route(request);
+    },
   });
 }

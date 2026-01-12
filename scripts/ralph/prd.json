@@ -415,37 +415,83 @@
        "notes": "Container now performs single attempts, orchestrator controls total iterations for external checkpointing and resumability"
      },
      {
-       "id": "021",
-       "title": "Implement pause and wait feature for human decision-making",
-       "status": "pending",
-       "priority": "P1",
-       "description": "Add ability for Ralph loop to pause mid-execution and wait for external input (human decision, webhook, notification). Enables 'call-a-friend' pattern where tasks can pause and request human help before continuing. **MUST use Effect for all async operations, Effect.sleep for polling, no new runtime dependencies required.**",
-       "acceptance_criteria": [
-         "SessionState extended with pause fields: paused, pauseReason, pauseRequestedAt, pauseResumeToken, pauseTimeout",
-         "pauseSession() function saves pause state via SchedulerService.checkpoint() - returns Effect",
-         "resumeSession() function validates token, checks timeout, clears pause state, re-queues task - returns Effect",
-         "Pause detection: regex pattern <pause>REASON</pause> detected in task responses (similar to promise tag)",
-         "POST /orchestrator/tasks/:taskId/resume endpoint accepts resumeToken and resumes paused task",
-         "Dispatcher skips paused tasks (only dispatches non-paused tasks from queue)",
-         "Timeout handling: paused tasks auto-cancel after pauseTimeout expires (default 1 hour)",
-         "Resume token validation prevents unauthorized task resumption",
-         "Pause state persisted via ironalarm checkpoints (same as session state)",
-         "Task can be paused and resumed multiple times during execution",
-         "**NO new runtime dependencies - uses existing Effect, ironalarm, Hono**",
-         "**NO raw promises, NO try/catch - Effect only, all operations use Effect.gen or Effect.runPromise()**"
-       ],
-       "dependencies": ["011", "012", "013"],
-       "new_files": [],
-       "files_to_modify": [
-         "src/orchestrator/types.ts",
-         "src/orchestrator/session.ts",
-         "src/orchestrator/handlers.ts",
-         "src/orchestrator/dispatcher.ts",
-         "src/orchestrator/orchestrator-do.ts"
-       ],
-       "verification": "SessionState includes pause fields, pauseSession/resumeSession functions implemented with Effect, pause tag detection works in task responses, /resume endpoint accepts tokens and resumes tasks, dispatcher skips paused tasks, timeout handling works, pause state persists across DO evictions, TypeScript compiles without errors, all operations Effect-based"
-     }
+        "id": "021",
+        "title": "Implement pause and wait feature for human decision-making",
+        "status": "pending",
+        "priority": "P2",
+        "description": "Add ability for Ralph loop to pause mid-execution and wait for external input (human decision, webhook, notification). Enables 'call-a-friend' pattern where tasks can pause and request human help before continuing. **MUST use Effect for all async operations, Effect.sleep for polling, no new runtime dependencies required.**",
+        "acceptance_criteria": [
+          "SessionState extended with pause fields: paused, pauseReason, pauseRequestedAt, pauseResumeToken, pauseTimeout",
+          "pauseSession() function saves pause state via SchedulerService.checkpoint() - returns Effect",
+          "resumeSession() function validates token, checks timeout, clears pause state, re-queues task - returns Effect",
+          "Pause detection: regex pattern <pause>REASON</pause> detected in task responses (similar to promise tag)",
+          "POST /orchestrator/tasks/:taskId/resume endpoint accepts resumeToken and resumes paused task",
+          "Dispatcher skips paused tasks (only dispatches non-paused tasks from queue)",
+          "Timeout handling: paused tasks auto-cancel after pauseTimeout expires (default 1 hour)",
+          "Resume token validation prevents unauthorized task resumption",
+          "Pause state persisted via ironalarm checkpoints (same as session state)",
+          "Task can be paused and resumed multiple times during execution",
+          "**NO new runtime dependencies - uses existing Effect, ironalarm, Hono**",
+          "**NO raw promises, NO try/catch - Effect only, all operations use Effect.gen or Effect.runPromise()**"
+        ],
+        "dependencies": ["011", "012", "013"],
+        "new_files": [],
+        "files_to_modify": [
+          "src/orchestrator/types.ts",
+          "src/orchestrator/session.ts",
+          "src/orchestrator/handlers.ts",
+          "src/orchestrator/dispatcher.ts",
+          "src/orchestrator/orchestrator-do.ts"
+        ],
+        "verification": "SessionState includes pause fields, pauseSession/resumeSession functions implemented with Effect, pause tag detection works in task responses, /resume endpoint accepts tokens and resumes tasks, dispatcher skips paused tasks, timeout handling works, pause state persists across DO evictions, TypeScript compiles without errors, all operations Effect-based"
+      },
+     {
+        "id": "022",
+        "title": "FIX CRITICAL DX: `bun dev` fails and production broken",
+        "status": "completed",
+        "priority": "P0",
+        "description": "CRITICAL BLOCKER: Local dev workflow (`bun dev`) is failing, making development impossible. Production is also not working. Need immediate fix to establish happy path for BOTH local dev and production demos. Everything must be reproducible by the driver (user) with clear documentation.",
+        "acceptance_criteria": [
+          "**LOCAL DEV - MUST WORK**: `bun dev` starts successfully without errors",
+          "**Local dev happy path documented**: Clear, reproducible steps for two-terminal setup",
+          "**Container server starts**: `PORT=8081 bun run --hot container/server.ts` runs without errors",
+          "**Dev server starts**: `bun run dev` serves on http://localhost:5173 without errors",
+          "**Health check works locally**: `curl http://localhost:5173/api/health` returns 200",
+          "**Demo UI loads**: Visit http://localhost:5173 and see working demo page",
+          "**Demo API works**: Can submit product research form and get results",
+          "**PRODUCTION - MUST WORK**: Production deployment is healthy and functional",
+          "**Production health check**: `curl https://ralphwiggums.coey.dev/health` returns 200",
+          "**Production demo works**: https://ralphwiggums.coey.dev loads and works",
+          "**Production API works**: Can submit product research form and get results",
+          "**Request tracing enabled**: All logs have requestId prefixes for debugging",
+          "**Wrangler tail works**: `wrangler tail ralphwiggums-ralphwiggums-api-prod` shows production logs",
+          "**Test-demo script works**: `bun run test:demo --url=https://ralphwiggums.coey.dev` passes",
+          "**Documentation updated**: AGENTS.md has clear, working local dev and production verification steps",
+          "**Reproducible**: New machine can follow README and get both dev and prod working on first try",
+          "**No hidden steps**: All configuration, setup, and troubleshooting documented",
+          "**Error messages actionable**: If something fails, error message tells user exactly what to fix"
+        ],
+        "known_issues": [
+          "Local dev `bun dev` is failing - exact error unknown",
+          "Production is not working - exact error unknown",
+          "Need to diagnose both issues and provide fixes",
+          "Current documentation may be incomplete or outdated",
+          "Driver (user) cannot reproduce happy path for dev or prod"
+        ],
+        "files_to_modify": [
+          "AGENTS.md",
+          "README.md",
+          "container/server.ts",
+          "src/worker.ts",
+          "src/routes/api/product-research/+server.ts",
+          "src/routes/api/health/+server.ts",
+          "package.json"
+        ],
+        "verification": "Test both local dev and production end-to-end: start local dev (two terminals), verify health check, run demo UI, submit form and get results. Test production: run `bun run test:demo --url=https://ralphwiggums.coey.dev`, verify health check, visit production URL, submit form and get results. All tests pass, no errors, happy path documented and reproducible.",
+        "notes": "CRITICAL: This is blocking ALL development work. Cannot proceed with any other stories until local dev and production work reliably. Driver must be able to reproduce happy path for both environments.",
+        "completed_at": "2026-01-12T11:26:00Z"
+      }
   ],
-    "completed": ["001", "002", "003", "004", "005", "006", "007", "008", "009", "009.1", "010", "011", "012", "013", "014", "015", "016", "017", "018", "019", "020"],
-   "next_story_id": "022"
+     "completed": ["001", "002", "003", "004", "005", "006", "007", "008", "009", "009.1", "010", "011", "012", "013", "014", "015", "016", "017", "018", "019", "020"],
+    "next_story_id": "023"
 }

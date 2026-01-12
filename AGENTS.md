@@ -84,6 +84,7 @@ If any of the above is not true, keep iterating.
 - Run typecheck/tests/lint before committing.
 - For Workers/config changes: run local dev and hit endpoints with `curl`.
 - **For workflow changes: validate YAML syntax**
+- For production deployments: run `bun run test:demo --url=https://ralphwiggums.coey.dev`
 
 5) **Commit only green**
 Commit message:
@@ -109,6 +110,14 @@ Persistent memory is ONLY:
 - **PREFER Effect over:** `Promise.all` (use `Effect.all` for complex orchestration), `try/catch` (use `Effect.catchAll` or typed errors), `setTimeout` (use `Effect.sleep`), manual resource cleanup (use `Effect.acquireUseRelease`).
 - If you're writing async code, use Effect. If you're not using Effect, you're probably doing it wrong.
 
+9) **Deploy Verification Required**
+- After GitHub Actions deployment completes, verify production is working.
+- Run test script: `bun run test:demo --url=https://ralphwiggums.coey.dev`
+- Check production health: `curl https://ralphwiggums.coey.dev/health`
+- If failures occur, check logs with: `wrangler tail ralphwiggums-ralphwiggums-api-prod`
+- Never assume deployment succeeded without verification.
+- See DEPLOYMENT VERIFICATION section for detailed commands and request tracing.
+
 ---
 
 ## LOCAL DEV: REQUIRED TWO-TERMINAL SETUP
@@ -126,6 +135,62 @@ cd /Users/jordan/Desktop/ralphwiggums
 export CONTAINER_URL=http://localhost:8081
 bun run dev
 ```
+
+---
+
+## DEPLOYMENT VERIFICATION
+
+### After GitHub Actions Deployment
+
+**Verify staging deployment:**
+```bash
+bun run test:demo --url=https://ralphwiggums-staging.coey.dev
+```
+
+**Verify production deployment:**
+```bash
+bun run test:demo --url=https://ralphwiggums.coey.dev
+```
+
+**Check production health:**
+```bash
+curl https://ralphwiggums.coey.dev/health
+```
+
+**Check production logs:**
+```bash
+wrangler tail ralphwiggums-ralphwiggums-api-prod
+```
+
+**Request tracing:**
+- All requests include `requestId` for tracing
+- Logs are prefixed: `[WORKER:reqId]`, `[CONTAINER:reqId]`, `[RALPH:reqId]`
+- Use `wrangler tail` to follow request flow through worker → container → Ralph loop
+
+### Test Script Usage
+
+**Test local dev:**
+```bash
+bun run test:demo
+# Defaults to http://localhost:5173
+```
+
+**Test staging:**
+```bash
+bun run test:demo --url=https://ralphwiggums-staging.coey.dev
+```
+
+**Test production:**
+```bash
+bun run test:demo --url=https://ralphwiggums.coey.dev
+```
+
+**What test-demo does:**
+1. Runs health check
+2. Sends test request to `/api/product-research`
+3. Logs response status, headers, timing
+4. Displays full result or error
+5. Provides `wrangler tail` instructions for deeper debugging
 
 ---
 
