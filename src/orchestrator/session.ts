@@ -7,7 +7,7 @@
 
 import { Effect } from "effect";
 import type { SessionState, SchedulerService } from "./types.js";
-import { SessionError, SchedulerServiceTag } from "./types.js";
+import { SessionError, OrchestratorError, SchedulerServiceTag, DEFAULT_PAUSE_TIMEOUT } from "./types.js";
 
 /**
  * Update session iteration count
@@ -144,4 +144,150 @@ export function loadSessionState(
       taskId
     }))
   );
+}
+
+/**
+ * Pause a session and save pause state
+ */
+export function pauseSession(
+  taskId: string,
+  pauseReason: string,
+  scheduler: SchedulerService,
+  timeout: number = DEFAULT_PAUSE_TIMEOUT
+): Effect.Effect<{ resumeToken: string }, SessionError, never> {
+  return Effect.gen(function* () {
+    const currentState = yield* loadSessionState(taskId, scheduler);
+
+    if (!currentState) {
+      return yield* Effect.fail(new SessionError({
+        reason: "Cannot pause: session state not found",
+        taskId
+      }));
+    }
+
+    // Generate unique resume token
+    const resumeToken = crypto.randomUUID();
+
+    const pausedState: SessionState = {
+      ...currentState,
+      paused: true,
+      pauseReason,
+      pauseRequestedAt: Date.now(),
+      pauseResumeToken: resumeToken,
+      pauseTimeout: timeout,
+      lastUpdated: Date.now(),
+    };
+
+    yield* saveSessionState(taskId, pausedState, scheduler);
+
+    return { resumeToken };
+  });
+}
+
+/**
+ * Resume a paused session
+ */
+export function resumeSession(
+  taskId: string,
+  resumeToken: string,
+  scheduler: SchedulerService
+): Effect.Effect<void, SessionError | OrchestratorError, never> {
+  return Effect.gen(function* () {
+    const currentState = yield* loadSessionState(taskId, scheduler);
+
+    if (!currentState) {
+      return yield* Effect.fail(new SessionError({
+        reason: "Cannot resume: session state not found",
+        taskId
+      }));
+    }
+
+    if (!currentState.paused) {
+      return yield* Effect.fail(new SessionError({
+        reason: "Cannot resume: session is not paused",
+        taskId
+      }));
+    }
+
+    // Validate resume token
+    if (currentState.pauseResumeToken !== resumeToken) {
+      return yield* Effect.fail(new SessionError({
+        reason: "Invalid resume token",
+        taskId
+      }));
+    }
+
+    // Check timeout
+    if (currentState.pauseRequestedAt && currentState.pauseTimeout) {
+      const elapsed = Date.now() - currentState.pauseRequestedAt;
+      if (elapsed > currentState.pauseTimeout) {
+        return yield* Effect.fail(new SessionError({
+          reason: "Pause timeout expired",
+          taskId
+        }));
+      }
+    }
+
+    // Clear pause state
+    const resumedState: SessionState = {
+      ...currentState,
+      paused: false,
+      pauseReason: undefined,
+      pauseRequestedAt: undefined,
+      pauseResumeToken: undefined,
+      pauseTimeout: undefined,
+      lastUpdated: Date.now(),
+    };
+
+    yield* saveSessionState(taskId, resumedState, scheduler);
+
+    // Re-queue task for execution
+    yield* scheduler.runNow(taskId, "browser-automation", {
+      prompt: resumedState.prompt,
+      maxIterations: resumedState.maxIterations,
+      resumeFrom: taskId,
+    });
+  });
+}
+
+/**
+ * Check if session is paused
+ */
+export function isSessionPaused(state: SessionState): boolean {
+  return !!state.paused;
+}
+
+/**
+ * Check if a paused session has expired (timeout exceeded)
+ */
+export function isPauseExpired(state: SessionState): boolean {
+  if (!state.paused || !state.pauseRequestedAt || !state.pauseTimeout) {
+    return false;
+  }
+  const elapsed = Date.now() - state.pauseRequestedAt;
+  return elapsed > state.pauseTimeout;
+}
+
+/**
+ * Cancel expired paused tasks
+ * Returns list of cancelled task IDs
+ */
+export function cancelExpiredPausedTasks(
+  tasks: Array<{ taskId: string }>,
+  scheduler: SchedulerService
+): Effect.Effect<string[], SessionError | OrchestratorError, never> {
+  return Effect.gen(function* () {
+    const cancelledTaskIds: string[] = [];
+
+    for (const task of tasks) {
+      const sessionState = yield* loadSessionState(task.taskId, scheduler);
+      if (sessionState && isSessionPaused(sessionState) && isPauseExpired(sessionState)) {
+        // Cancel the expired paused task
+        yield* scheduler.cancelTask(task.taskId);
+        cancelledTaskIds.push(task.taskId);
+      }
+    }
+
+    return cancelledTaskIds;
+  });
 }

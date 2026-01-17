@@ -75,6 +75,11 @@ export interface SessionState {
   lastUpdated: number;
   maxIterations: number;
   completed?: boolean;
+  paused?: boolean;
+  pauseReason?: string;
+  pauseRequestedAt?: number;
+  pauseResumeToken?: string;
+  pauseTimeout?: number;
 }
 
 // ============================================================================
@@ -196,3 +201,19 @@ export function detectPromiseTag(response: string): string | null {
 }
 
 export const DEFAULT_COMPLETION_PROMISE = "TASK_COMPLETE";
+
+// ============================================================================
+// Pause Tag Detection
+// ============================================================================
+
+const PAUSE_TAG_REGEX = /<pause>(.*?)<\/pause>/gi;
+
+export function detectPauseTag(response: string): string | null {
+  const match = PAUSE_TAG_REGEX.exec(response);
+  if (match) {
+    return match[1];
+  }
+  return null;
+}
+
+export const DEFAULT_PAUSE_TIMEOUT = 3600000; // 1 hour in milliseconds

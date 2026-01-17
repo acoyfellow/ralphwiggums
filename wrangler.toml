@@ -1,0 +1,7 @@
+name = "ralphwiggums-ralphwiggums-api-prod"
+main = "dist/_worker.js"
+compatibility_date = "2024-01-01"
+
+[assets]
+directory = ".svelte-kit/cloudflare"
+binding = "ASSETS"

@@ -8,9 +8,9 @@
 import { Hono } from "hono";
 import { Effect, Stream } from "effect";
 import type { ReliableScheduler } from "ironalarm";
-import type { BrowserPool, BrowserAutomationParams } from "./types.js";
-import { SchedulerService } from "./types.js";
+import type { BrowserPool, BrowserAutomationParams, SchedulerService } from "./types.js";
 import { formatSseEvent, createSseEvent, streamingService } from "./streaming.js";
+import { resumeSession } from "./session.js";
 
 // ============================================================================
 // API Response Types
@@ -50,7 +50,8 @@ export function createOrchestratorHandlers(
   getPoolStatus: () => { size: number; maxSize: number; available: number; busy: number; unhealthy: number },
   runNow: (taskId: string, params: BrowserAutomationParams, options?: { priority?: number }) => Promise<void>,
   schedule: (at: Date | number, taskId: string, params: BrowserAutomationParams, options?: { priority?: number }) => Promise<void>,
-  cancelTask: (taskId: string) => Promise<void>
+  cancelTask: (taskId: string) => Promise<void>,
+  schedulerService: SchedulerService
 ): Hono {
   const app = new Hono();
 
@@ -223,6 +224,26 @@ export function createOrchestratorHandlers(
 
   app.post("/orchestrator/scale", async (c) => {
     return c.json({ message: "Pool scaling not yet implemented" }, { status: 501 });
+  });
+
+  // POST /orchestrator/tasks/:taskId/resume - Resume a paused task
+  app.post("/orchestrator/tasks/:taskId/resume", async (c) => {
+    try {
+      const taskId = c.req.param("taskId");
+      const body = await c.req.json() as { resumeToken: string };
+
+      if (!body.resumeToken) {
+        return c.json({ error: "resumeToken is required", tag: "InvalidRequest" }, { status: 400 });
+      }
+
+      await Effect.runPromise(
+        resumeSession(taskId, body.resumeToken, schedulerService)
+      );
+
+      return c.json({ taskId, status: "resumed" });
+    } catch (error) {
+      return c.json(createErrorResponse(error), { status: 500 });
+    }
   });
 
   return app;

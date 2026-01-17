@@ -7,9 +7,11 @@
 
 import { Effect, Data } from "effect";
 import type { ReliableScheduler, Task } from "ironalarm";
-import type { BrowserPool, BrowserAutomationParams } from "./types.js";
+import type { BrowserPool, BrowserAutomationParams, SchedulerService } from "./types.js";
+import { SessionError, OrchestratorError } from "./types.js";
 import { PoolError, PoolExhaustedError } from "./pool.js";
 import { findAvailableBrowser, acquireBrowser, releaseBrowser, type BrowserInstance } from "./pool.js";
+import { loadSessionState, isSessionPaused, cancelExpiredPausedTasks } from "./session.js";
 
 // ============================================================================
 // Errors
@@ -48,11 +50,13 @@ function executeTaskOnBrowser(
 
 /**
  * Dispatch tasks from the queue to available browsers
+ * Skips paused tasks (only dispatches non-paused tasks)
  */
 export function dispatchTasks(
   scheduler: ReliableScheduler,
-  pool: BrowserPool
-): Effect.Effect<void, DispatcherError | PoolError | PoolExhaustedError, never> {
+  pool: BrowserPool,
+  schedulerService: SchedulerService
+): Effect.Effect<void, DispatcherError | PoolError | PoolExhaustedError | SessionError | OrchestratorError, never> {
   return Effect.gen(function* () {
     // Get pending tasks from ironalarm (these are queued and ready to run)
     const tasks = yield* scheduler.getTasks("pending");
@@ -61,17 +65,40 @@ export function dispatchTasks(
       return; // No tasks to dispatch
     }
 
+    // Cancel expired paused tasks
+    const cancelledTaskIds = yield* cancelExpiredPausedTasks(tasks, schedulerService);
+    if (cancelledTaskIds.length > 0) {
+      console.log(`Cancelled ${cancelledTaskIds.length} expired paused tasks: ${cancelledTaskIds.join(", ")}`);
+    }
+
+    // Filter out paused tasks (including newly expired ones)
+    const nonPausedTasks: Task[] = [];
+    for (const task of tasks) {
+      // Skip cancelled tasks
+      if (cancelledTaskIds.includes(task.taskId)) {
+        continue;
+      }
+      const sessionState = yield* loadSessionState(task.taskId, schedulerService);
+      if (!sessionState || !isSessionPaused(sessionState)) {
+        nonPausedTasks.push(task);
+      }
+    }
+
+    if (nonPausedTasks.length === 0) {
+      return; // All tasks are paused
+    }
+
     // Process tasks up to available browser capacity
     const availableCapacity = pool.availableCount;
 
     if (availableCapacity === 0) {
       // No browsers available - log and tasks will remain queued for next dispatch cycle
-      console.log(`Pool exhausted: ${tasks.length} tasks waiting for available browsers`);
+      console.log(`Pool exhausted: ${nonPausedTasks.length} tasks waiting for available browsers`);
       return;
     }
 
     // Take only as many tasks as we have browsers
-    const tasksToProcess = tasks.slice(0, availableCapacity);
+    const tasksToProcess = nonPausedTasks.slice(0, availableCapacity);
 
     // Execute tasks concurrently
     yield* Effect.all(

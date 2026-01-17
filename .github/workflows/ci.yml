@@ -15,9 +15,9 @@ jobs:
       - run: bun install
       - run: bun run build
       - run: bun test src/__tests__/api.test.ts
-      - run: bun run test:demo --url=http://localhost:3000 &
-        sleep 10 &&
-        curl -f http://localhost:3000/api/health
+      - run: bun run test:demo --url=http://localhost:3000
+      - run: sleep 10
+      - run: curl -f http://localhost:3000/api/health
 
   deploy-staging:
     needs: test

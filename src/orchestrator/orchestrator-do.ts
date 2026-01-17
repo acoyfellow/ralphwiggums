@@ -26,9 +26,10 @@ import type {
 } from "./types.js";
 import { SchedulerService, SchedulerServiceTag } from "./types.js";
 import { createPool, type BrowserPool, type BrowserInstance, startAutoScaling } from "./pool.js";
-import { loadSessionState, saveSessionState, completeSessionWithPromise } from "./session.js";
+import { loadSessionState, saveSessionState, completeSessionWithPromise, pauseSession } from "./session.js";
 import { dispatchTasks, type DispatcherError } from "./dispatcher.js";
 import { createOrchestratorHandlers } from "./handlers.js";
+import { detectPauseTag } from "./types.js";
 
 /**
  * Orchestrator Durable Object
@@ -106,6 +107,14 @@ export class OrchestratorDO implements DurableObject {
         // TODO: Check for promise tag completion and update session state
         // This will be implemented when browser automation logic is added
 
+        // TODO: Check for pause tag in browser response
+        // When browser automation is implemented, check response data for pause tags:
+        // const pauseReason = detectPauseTag(responseData);
+        // if (pauseReason) {
+        //   yield* pauseSession(taskId, pauseReason, svc);
+        //   return Effect.succeed(undefined); // Task paused, will resume later
+        // }
+
         // For now, just succeed - full implementation comes in later stories
         return Effect.succeed(undefined);
       }).pipe(
@@ -138,7 +147,8 @@ export class OrchestratorDO implements DurableObject {
       // Cancel returns boolean, wrap to void
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (taskId: any): Promise<void> => 
-        Effect.runPromise(this.scheduler.cancelTask(taskId)).then(() => {})
+        Effect.runPromise(this.scheduler.cancelTask(taskId)).then(() => {}),
+      this.schedulerService
     );
 
     // Delegate to Hono handlers
@@ -156,7 +166,7 @@ export class OrchestratorDO implements DurableObject {
     const runDispatch = async () => {
       try {
         await Effect.runPromise(
-          dispatchTasks(this.scheduler, this.browserPool)
+          dispatchTasks(this.scheduler, this.browserPool, this.schedulerService)
         );
       } catch (error) {
         console.error("Dispatch loop error:", error instanceof Error ? error.message : String(error));
@@ -187,7 +197,7 @@ export class OrchestratorDO implements DurableObject {
 
     // Run dispatch on alarm to catch any pending tasks
     await Effect.runPromise(
-      dispatchTasks(this.scheduler, this.browserPool)
+      dispatchTasks(this.scheduler, this.browserPool, this.schedulerService)
     ).catch(error => {
       console.error("Dispatch error during alarm:", error instanceof Error ? error.message : String(error));
     });

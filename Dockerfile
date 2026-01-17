@@ -2,11 +2,17 @@ FROM oven/bun:1-alpine
 
 WORKDIR /app
 
-COPY package.json bun.lock* ./
+# Copy package files
+COPY package.json ./
 
+# Install dependencies
 RUN bun install
 
-COPY container/ .
+# Copy source
+COPY . .
 
+# Expose port
 EXPOSE 8081
-CMD ["bun", "run", "--hot", "server.ts"]
+
+# Start the server
+CMD ["bun", "run", "server.js"]

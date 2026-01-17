@@ -28,6 +28,12 @@ async function getBrowserFromPool(requestId: string) {
         }
       }
       return { success: false, message: "Action not supported" };
+
+function extractUrlFromAction(action: string): string | null {
+  // Extract URL from action text like "go to https://example.com"
+  const urlMatch = action.match(/(https?:\/\/[^\s]+)/i);
+  return urlMatch ? urlMatch[1] : null;
+}
     },
     close: async () => {
       await browser.close();
@@ -136,10 +142,12 @@ async function runRalphLoop(prompt: string, apiKey: string, maxIterations: numbe
       // Add other config as needed
     });
 
+    // Initialize Stagehand
+    await stagehand.init();
     console.log(`[RALPH:${requestId}] Stagehand initialized`);
 
-    // Initialize page
-    const page = await stagehand.page();
+    // Get the page from stagehand context (Stagehand v3 API)
+    const page = (stagehand as any).context.pages()[0];
 
     // Navigate to the target URL from prompt
     // Extract URL from prompt like "Go to https://example.com and extract..."

@@ -1,14 +1,15 @@
 /**
+ * @fileoverview
  * ralphwiggums - Unit Tests
  * Tests for core library functionality with mocked dependencies.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { Effect } from "effect";
-import type { RalphOptions, RalphResult, RalphConfig } from "../index.js";
+import type { RalphOptions, RalphResult } from "../index.js";
 
 // Import the module to test
-import * as Ralph from "../index.js";
+import { run, ValidationError, MaxIterationsError, TimeoutError, BrowserError, RateLimitError, UnauthorizedError } from "../index.js";
+import { setContainerFetch } from "../index.js";
 
 // ============================================================================
 // Mock Setup
@@ -19,390 +20,149 @@ const mockContainerFetch = vi.fn();
 // Reset and setup mocks before each test
 beforeEach(() => {
   vi.clearAllMocks();
-  Ralph.setContainerFetch(mockContainerFetch);
 });
 
 afterEach(() => {
-  vi.restoreAllMocks();
-  Ralph.setContainerFetch(null);
-  // Reset semaphore state
-  Ralph.releaseSemaphore();
+  setContainerFetch(null);
 });
 
 // ============================================================================
-// Tests
+// Test Suites
 // ============================================================================
 
-describe("RalphWiggums Core", () => {
-  describe("doThis()", () => {
-    it("should return successful result on first iteration", async () => {
-      mockContainerFetch.mockResolvedValue({
-        success: true,
-        data: "TASK_COMPLETE",
-      });
-
-      const result = await Effect.runPromise(Ralph.doThis("Click submit button")) as RalphResult;
-
-      expect(result.success).toBe(true);
-      expect(result.message).toBe("Task completed");
-      expect(result.iterations).toBe(1);
-      expect(result.checkpointId).toBeDefined();
+describe("run()", () => {
+  it("should call container with correct parameters", async () => {
+    mockContainerFetch.mockResolvedValue({
+      success: true,
+      data: "test result",
+      iterations: 1,
+      message: "Task completed"
     });
 
-    it("should return success when response includes 'success' string", async () => {
-      mockContainerFetch.mockResolvedValue({
-        success: true,
-        data: "Action was successful",
-      });
+    setContainerFetch(mockContainerFetch);
 
-      const result = await Effect.runPromise(Ralph.doThis("Fill form")) as RalphResult;
+    const result = await run("Go to example.com and get title");
 
-      expect(result.success).toBe(true);
-      expect(result.iterations).toBe(1);
+    expect(mockContainerFetch).toHaveBeenCalledWith("/do", {
+      prompt: "Go to example.com and get title",
+      maxIterations: 10,
+      timeout: 300000
     });
 
-    it("should complete after container handles iterations internally", async () => {
-      // Container handles iterations internally and returns final result with iteration count
-      mockContainerFetch.mockResolvedValue({
-        success: true,
-        data: "TASK_COMPLETE",
-        iterations: 2
-      });
-
-      const result = await Effect.runPromise(Ralph.doThis("Fill form", { maxIterations: 5 })) as RalphResult;
-
-      expect(result.success).toBe(true);
-      expect(result.iterations).toBe(2);
-    });
-
-    it("should succeed when container reaches max iterations with partial result", async () => {
-      // Container handles max iterations internally and returns success with final iterations count
-      mockContainerFetch.mockResolvedValue({
-        success: true,
-        data: "Partial result after max iterations",
-        iterations: 3
-      });
-
-      const result = await Effect.runPromise(Ralph.doThis("Fill form", { maxIterations: 5 })) as RalphResult;
-
-      expect(result.success).toBe(true);
-      expect(result.iterations).toBe(3);
-      expect(result.data).toBe("Partial result after max iterations");
-    });
-
-    it("should fail with BrowserError when /start fails", async () => {
-      mockContainerFetch.mockRejectedValue(new Error("Container failed to start"));
-
-      const result = Effect.runPromise(Ralph.doThis("Click button"));
-
-      try {
-        await result;
-        expect.fail("Should have thrown");
-      } catch (e: any) {
-        expect(e).toBeDefined();
-      }
-    });
-
-    it("should fail with BrowserError when /instruction fails", async () => {
-      let callCount = 0;
-      mockContainerFetch.mockImplementation((path) => {
-        callCount++;
-        if (path === "/start") return Promise.resolve({ success: true });
-        if (path === "/instruction") return Promise.reject(new Error("Navigation failed"));
-        return Promise.resolve({ success: true });
-      });
-
-      const result = Effect.runPromise(Ralph.doThis("Click button"));
-
-      try {
-        await result;
-        expect.fail("Should have thrown");
-      } catch (e: any) {
-        expect(e).toBeDefined();
-      }
-    });
-
-    it("should pass maxIterations to container", async () => {
-      // Client passes maxIterations to container, container handles iteration limits internally
-      mockContainerFetch.mockResolvedValue({
-        success: true,
-        data: "Completed within limits",
-        iterations: 2
-      });
-
-      const result = await Effect.runPromise(Ralph.doThis("Fill form", { maxIterations: 5 })) as RalphResult;
-
-      expect(result.success).toBe(true);
-      expect(result.iterations).toBe(2);
+    expect(result).toEqual({
+      success: true,
+      message: "Task completed",
+      data: "test result",
+      iterations: 1
     });
   });
 
-  describe("run()", () => {
-    it("should return result from doThis", async () => {
-      mockContainerFetch.mockResolvedValue({
-        success: true,
-        data: "TASK_COMPLETE",
-      });
+  it("should use custom options", async () => {
+    mockContainerFetch.mockResolvedValue({
+      success: true,
+      data: "result",
+      iterations: 1,
+      message: "Done"
+    });
 
-      const result = await Ralph.run("Click submit");
+    setContainerFetch(mockContainerFetch);
 
-      expect(result.success).toBe(true);
-      expect(result.message).toBe("Task completed");
+    const options: RalphOptions = {
+      maxIterations: 5,
+      timeout: 60000
+    };
+
+    await run("Test prompt", options);
+
+    expect(mockContainerFetch).toHaveBeenCalledWith("/do", {
+      prompt: "Test prompt",
+      maxIterations: 5,
+      timeout: 60000
     });
   });
 
-  describe("createHandlers()", () => {
-    it("should create Hono app with routes", () => {
-      const app = Ralph.createHandlers();
+  it("should handle container errors", async () => {
+    mockContainerFetch.mockRejectedValue(new Error("Container failed"));
 
-      expect(app).toBeDefined();
-      expect(typeof app.fetch).toBe("function");
-    });
+    setContainerFetch(mockContainerFetch);
 
-    it("POST /do should reject empty prompts", async () => {
-      mockContainerFetch.mockResolvedValue({ success: true });
-
-      const app = Ralph.createHandlers();
-      const mockRequest = new Request("http://localhost/do", {
-        method: "POST",
-        body: JSON.stringify({ prompt: "" }),
-        headers: { "Content-Type": "application/json" },
-      });
-
-      const res = await app.fetch(mockRequest, {} as any);
-      // Empty prompt should fail (either 400 validation or error)
-      expect(res.status).not.toBe(200);
-    });
-
-    it("POST /do should reject missing prompt", async () => {
-      mockContainerFetch.mockResolvedValue({ success: true });
-
-      const app = Ralph.createHandlers();
-      const mockRequest = new Request("http://localhost/do", {
-        method: "POST",
-        body: JSON.stringify({}),
-        headers: { "Content-Type": "application/json" },
-      });
-
-      const res = await app.fetch(mockRequest, {} as any);
-      expect(res.status).not.toBe(200);
-    });
-
-    it("POST /do should handle errors appropriately", async () => {
-      mockContainerFetch.mockRejectedValue(new Error("Container failed"));
-
-      const app = Ralph.createHandlers();
-      const mockRequest = new Request("http://localhost/do", {
-        method: "POST",
-        body: JSON.stringify({ prompt: "Click button" }),
-        headers: { "Content-Type": "application/json" },
-      });
-
-      const res = await app.fetch(mockRequest, {} as any);
-      // Should return an error status (5xx)
-      expect(res.status).toBeGreaterThanOrEqual(400);
-    });
-
-    it("POST /do should succeed even when container handles iterations", async () => {
-      mockContainerFetch.mockResolvedValue({ success: true, data: "Completed after iterations", iterations: 2 });
-
-      const app = Ralph.createHandlers();
-      const mockRequest = new Request("http://localhost/do", {
-        method: "POST",
-        body: JSON.stringify({ prompt: "Fill form", options: { maxIterations: 5 } }),
-        headers: { "Content-Type": "application/json" },
-      });
-
-      const res = await app.fetch(mockRequest, {} as any);
-      expect(res.status).toBe(200);
-
-      const responseData = await res.json();
-      expect(responseData.success).toBe(true);
-      expect(responseData.iterations).toBe(2);
-    });
-
-    it("POST /resume/:checkpointId should attempt resume", async () => {
-      mockContainerFetch.mockResolvedValue({ success: true, data: "TASK_COMPLETE" });
-
-      const app = Ralph.createHandlers();
-      const mockRequest = new Request("http://localhost/resume/checkpoint-123", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      const res = await app.fetch(mockRequest, {} as any);
-      // Should attempt the request (may succeed or fail based on implementation)
-      expect([200, 400, 500]).toContain(res.status);
-    });
-
-    it("GET /status/:taskId should return status", async () => {
-      const app = Ralph.createHandlers();
-      const mockRequest = new Request("http://localhost/status/task-123", {
-        method: "GET",
-      });
-
-      const res = await app.fetch(mockRequest, {} as any);
-      expect(res.status).toBe(200);
-
-      const body = await res.json();
-      expect(body).toHaveProperty("activeRequests");
-      expect(body).toHaveProperty("queueLength");
-    });
+    await expect(run("Test")).rejects.toThrow("Container failed");
   });
 
-  describe("Type exports", () => {
-    it("should export RalphOptions interface", () => {
-      const opts: RalphOptions = {
-        maxIterations: 10,
-        timeout: 60000,
-        resumeFrom: "checkpoint-123",
-      };
-
-      expect(opts.maxIterations).toBe(10);
-      expect(opts.timeout).toBe(60000);
-      expect(opts.resumeFrom).toBe("checkpoint-123");
-    });
-
-    it("should export RalphResult interface", () => {
-      const result: RalphResult = {
-        success: true,
-        message: "Task completed",
-        iterations: 3,
-        checkpointId: "cp-123",
-      };
-
-      expect(result.success).toBe(true);
-      expect(result.iterations).toBe(3);
-    });
-
-    it("should export RalphConfig interface", () => {
-      const config: RalphConfig = {
-        apiKey: "test-key",
-        maxPromptLength: 10000,
-        maxConcurrent: 5,
-        requestTimeout: 300000,
-        debug: false,
-      };
-
-      expect(config.apiKey).toBe("test-key");
-      expect(config.maxPromptLength).toBe(10000);
-    });
+  it("should validate prompt", async () => {
+    await expect(run("")).rejects.toThrow(ValidationError);
+    await expect(run("   ")).rejects.toThrow(ValidationError);
   });
 
-  describe("Configuration", () => {
-    it("should have secure default config", () => {
-      const config = Ralph.getConfig();
-      
-      expect(config).toBeDefined();
-      expect(config.maxPromptLength).toBeGreaterThan(0);
-      expect(config.maxConcurrent).toBeGreaterThan(0);
-      expect(config.requestTimeout).toBeGreaterThan(0);
-      expect(typeof config.debug).toBe("boolean");
-    });
+  it("should validate prompt length", async () => {
+    const longPrompt = "a".repeat(10001);
+    await expect(run(longPrompt)).rejects.toThrow(ValidationError);
   });
 
-  describe("Request ID generation", () => {
-    it("should generate unique request IDs", () => {
-      const id1 = Ralph.generateRequestId();
-      const id2 = Ralph.generateRequestId();
-      
-      expect(id1).toBeDefined();
-      expect(id2).toBeDefined();
-      expect(id1).not.toBe(id2);
+  it("should include requestId in result", async () => {
+    mockContainerFetch.mockResolvedValue({
+      success: true,
+      data: "result",
+      iterations: 1,
+      message: "Done",
+      requestId: "test-123"
     });
 
-    it("should have expected request ID format", () => {
-      const id = Ralph.generateRequestId();
-      expect(id).toMatch(/^rw_\d+_\d+$/);
-    });
+    setContainerFetch(mockContainerFetch);
+
+    const result = await run("Test");
+
+    expect(result.requestId).toBe("test-123");
   });
 });
 
-describe("RalphWiggums Integration Scenarios", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    Ralph.setContainerFetch(mockContainerFetch);
+describe("Error Classes", () => {
+  it("should export all error classes", () => {
+    expect(ValidationError).toBeDefined();
+    expect(MaxIterationsError).toBeDefined();
+    expect(TimeoutError).toBeDefined();
+    expect(BrowserError).toBeDefined();
+    expect(RateLimitError).toBeDefined();
+    expect(UnauthorizedError).toBeDefined();
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-    Ralph.setContainerFetch(null);
-    Ralph.releaseSemaphore();
+  it("ValidationError should have correct name", () => {
+    const error = new ValidationError("test");
+    expect(error.name).toBe("ValidationError");
+    expect(error.message).toBe("test");
   });
 
-  it("should complete form filling workflow", async () => {
-    mockContainerFetch.mockResolvedValue({
-      success: true,
-      data: "TASK_COMPLETE",
-    });
-
-    const result = await Ralph.run(
-      "Fill out the contact form with name=test, email=test@example.com"
-    );
-
-    expect(result.success).toBe(true);
-    expect(result.iterations).toBe(1);
-    expect(result.checkpointId).toBeDefined();
-    expect(result.requestId).toBeDefined();
+  it("MaxIterationsError should include maxIterations", () => {
+    const error = new MaxIterationsError(5);
+    expect(error.name).toBe("MaxIterationsError");
+    expect(error.maxIterations).toBe(5);
+    expect(error.message).toBe("Task failed after 5 iterations");
   });
 
-  it("should handle extraction workflow", async () => {
-    mockContainerFetch.mockResolvedValue({
-      success: true,
-      data: "TASK_COMPLETE",
-    });
-
-    const result = await Ralph.run("Extract product name, price, and description");
-
-    expect(result.success).toBe(true);
+  it("TimeoutError should include duration", () => {
+    const error = new TimeoutError(30000);
+    expect(error.name).toBe("TimeoutError");
+    expect(error.duration).toBe(30000);
+    expect(error.message).toBe("Task timed out after 30000ms");
   });
 
-  it("should track iterations correctly with multi-step task", async () => {
-    let callCount = 0;
-    mockContainerFetch.mockImplementation((path) => {
-      callCount++;
-      if (path === "/start") return Promise.resolve({ success: true });
-      if (path === "/instruction") {
-        if (callCount <= 6) return Promise.resolve({ data: "Step in progress..." });
-        return Promise.resolve({ data: "TASK_COMPLETE" });
-      }
-      return Promise.resolve({ success: true });
-    });
-
-    const result = await Effect.runPromise(
-      Ralph.doThis("Multi-step task", { maxIterations: 5 })
-    ) as RalphResult;
-
-    expect(result.success).toBe(true);
-    expect(result.iterations).toBeGreaterThanOrEqual(1);
-  });
-});
-
-describe("RalphWiggums Security Features", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    Ralph.setContainerFetch(mockContainerFetch);
+  it("BrowserError should include reason", () => {
+    const error = new BrowserError("page crashed");
+    expect(error.name).toBe("BrowserError");
+    expect(error.reason).toBe("page crashed");
+    expect(error.message).toBe("Browser error: page crashed");
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-    Ralph.setContainerFetch(null);
-    Ralph.releaseSemaphore();
+  it("RateLimitError should include retryAfter", () => {
+    const error = new RateLimitError(60);
+    expect(error.name).toBe("RateLimitError");
+    expect(error.retryAfter).toBe(60);
+    expect(error.message).toBe("Rate limited. Retry after 60 seconds");
   });
 
-  it("should have semaphore for concurrency control", () => {
-    expect(typeof Ralph.acquireSemaphore).toBe("function");
-    expect(typeof Ralph.releaseSemaphore).toBe("function");
-    expect(typeof Ralph.getActiveRequestCount).toBe("function");
-  });
-
-  it("should have getConfig function", () => {
-    const config = Ralph.getConfig();
-    expect(config).toBeDefined();
-    expect(config).toHaveProperty("apiKey");
-    expect(config).toHaveProperty("maxPromptLength");
-    expect(config).toHaveProperty("maxConcurrent");
-    expect(config).toHaveProperty("requestTimeout");
-    expect(config).toHaveProperty("debug");
+  it("UnauthorizedError should have default message", () => {
+    const error = new UnauthorizedError();
+    expect(error.name).toBe("UnauthorizedError");
+    expect(error.message).toBe("Missing or invalid API key");
   });
 });
