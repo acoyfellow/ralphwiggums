@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeAll } from "vitest";
-import { run, setContainerUrl } from "../index.js";
+import { run, setContainerUrl } from "../../dist/src/index.js";
 
 const hasContainer = !!process.env.CONTAINER_URL;
 

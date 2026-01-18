@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline with Route Floop
 
 on:
   push:
@@ -6,39 +6,264 @@ on:
   pull_request:
     branches: [main]
 
+# Concurrency: Only allow one workflow per branch/ref
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Max retry attempts for failed routes
+  MAX_RETRIES: 5
+  # Delay between retries (seconds)
+  RETRY_DELAY: 5
+
 jobs:
   test:
+    name: Test Suite
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v1
-      - run: bun install
-      - run: bun run build
-      - run: bun test src/__tests__/api.test.ts
-      - run: bun run test:demo --url=http://localhost:3000
-      - run: sleep 10
-      - run: curl -f http://localhost:3000/api/health
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build project
+        run: bun run build
+
+      - name: Run API tests
+        run: bun test src/__tests__/api.test.ts
+
+      - name: Run unit tests
+        run: bun test src/__tests__/index.test.ts src/__tests__/promise-tag.test.ts src/__tests__/checkpoint-do.test.ts
+
+  route-floop:
+    name: Route Floop (Health Check with Retry Loop)
+    needs: test
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Deploy to PR environment
+        run: |
+          STAGE="pr-${{ github.event.number }}"
+          bun alchemy deploy --stage "$STAGE"
+        env:
+          ALCHEMY_PASSWORD: ${{ secrets.ALCHEMY_PASSWORD }}
+          ALCHEMY_STATE_TOKEN: ${{ secrets.ALCHEMY_STATE_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ZEN_API_KEY: ${{ secrets.ZEN_API_KEY }}
+          RALPH_API_KEY: ${{ secrets.RALPH_API_KEY }}
+          PULL_REQUEST: ${{ github.event.number }}
+          GITHUB_SHA: ${{ github.sha }}
+
+      - name: Wait for deployment (30s)
+        run: sleep 30
+
+      - name: Route Floop - Health Check with Retry Loop (Max 5)
+        id: route-floop
+        uses: nick-fields/retry-action@v2
+        with:
+          timeout_minutes: 5
+          max_attempts: ${{ env.MAX_RETRIES }}
+          retry_wait_seconds: ${{ env.RETRY_DELAY }}
+          on_retry_command: |
+            echo "⚠️ Route check failed (attempt ${{ env.RETRY_ATTEMPT }}/${{ env.MAX_RETRIES }})"
+            echo "Waiting ${{ env.RETRY_DELAY }}s before retry..."
+          command: |
+            STAGE="pr-${{ github.event.number }}"
+            URL="https://$STAGE.api.coey.dev"
+
+            echo "🔄 Route Floop: Checking health endpoint at $URL"
+            echo "Attempt: ${{ steps.route-floop.outputs.attempt }}"
+
+            # Check health endpoint
+            RESPONSE=$(curl -s -w "\n%{http_code}" -o /dev/null "$URL/health")
+
+            if [ "$RESPONSE" = "200" ]; then
+              echo "✅ Health check passed!"
+              exit 0
+            else
+              echo "❌ Health check failed with status: $RESPONSE"
+              exit 1
+            fi
+
+      - name: Run demo test suite
+        if: steps.route-floop.outputs.success == 'true'
+        run: |
+          STAGE="pr-${{ github.event.number }}"
+          URL="https://$STAGE.coey.dev"
+          echo "🧪 Testing demo UI at $URL"
+          bun run test:demo --url="$URL"
+
+      - name: Comment PR with deployment status
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const status = '${{ steps.route-floop.outcome }}' === 'success' ? '✅ Success' : '❌ Failed';
+            const stage = 'pr-${{ context.payload.pull_request.number }}';
+            const comment = `## Deployment Status
+
+            **Stage:** ${stage}
+            **Status:** ${status}
+            **URL:** https://${stage}.api.coey.dev
+
+            ---
+            *Route Floop completed with ${{ steps.route-floop.outputs.attempt || 'unknown' }} attempts*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
 
   deploy-staging:
+    name: Deploy to Staging
     needs: test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: staging
     steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v1
-      - run: bun run deploy
-      - run: sleep 30
-      - run: bun run test:demo --url=https://ralphwiggums-staging.coey.dev
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Deploy to staging
+        run: STAGE=staging bun alchemy deploy --stage staging
+        env:
+          ALCHEMY_PASSWORD: ${{ secrets.ALCHEMY_PASSWORD }}
+          ALCHEMY_STATE_TOKEN: ${{ secrets.ALCHEMY_STATE_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ZEN_API_KEY: ${{ secrets.ZEN_API_KEY }}
+          RALPH_API_KEY: ${{ secrets.RALPH_API_KEY }}
+
+      - name: Wait for deployment
+        run: sleep 30
+
+      - name: Route Floop - Staging Health Check
+        uses: nick-fields/retry-action@v2
+        with:
+          timeout_minutes: 5
+          max_attempts: 5
+          retry_wait_seconds: 5
+          command: |
+            echo "🔄 Checking staging health..."
+            RESPONSE=$(curl -s -w "\n%{http_code}" -o /dev/null https://ralphwiggums-staging.api.coey.dev/health)
+            if [ "$RESPONSE" = "200" ]; then
+              echo "✅ Staging health check passed"
+              exit 0
+            else
+              echo "❌ Staging health check failed: $RESPONSE"
+              exit 1
+            fi
 
   deploy-prod:
+    name: Deploy to Production
     needs: deploy-staging
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v1
-      - run: STAGE=prod bun run alchemy deploy --env-file .env
-      - run: sleep 30
-      - run: bun run test:demo
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Deploy to production
+        run: STAGE=prod bun alchemy deploy --stage prod
+        env:
+          ALCHEMY_PASSWORD: ${{ secrets.ALCHEMY_PASSWORD }}
+          ALCHEMY_STATE_TOKEN: ${{ secrets.ALCHEMY_STATE_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ZEN_API_KEY: ${{ secrets.ZEN_API_KEY }}
+          RALPH_API_KEY: ${{ secrets.RALPH_API_KEY }}
+
+      - name: Wait for deployment
+        run: sleep 30
+
+      - name: Route Floop - Production Health Check
+        uses: nick-fields/retry-action@v2
+        with:
+          timeout_minutes: 5
+          max_attempts: 5
+          retry_wait_seconds: 5
+          on_retry_command: |
+            echo "⚠️ Production health check failed, retrying..."
+          command: |
+            echo "🔄 Checking production health..."
+            RESPONSE=$(curl -s -w "\n%{http_code}" -o /dev/null https://ralphwiggums-api.coey.dev/health)
+            if [ "$RESPONSE" = "200" ]; then
+              echo "✅ Production health check passed"
+              exit 0
+            else
+              echo "❌ Production health check failed: $RESPONSE"
+              exit 1
+            fi
+
+      - name: Run production demo test
+        run: |
+          echo "🧪 Testing production demo..."
+          bun run test:demo --url=https://ralphwiggums.coey.dev
+
+  cleanup:
+    name: Cleanup PR Environment
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Safety Check
+        run: |
+          STAGE="pr-${{ github.event.number }}"
+          if [ "$STAGE" = "prod" ]; then
+            echo "🚨 SAFETY ERROR: Attempting to destroy prod environment!"
+            exit 1
+          fi
+          echo "🧹 Cleaning up stage: $STAGE"
+
+      - name: Destroy Preview Environment
+        run: |
+          bun alchemy destroy --stage "pr-${{ github.event.number }}"
+        env:
+          ALCHEMY_PASSWORD: ${{ secrets.ALCHEMY_PASSWORD }}
+          ALCHEMY_STATE_TOKEN: ${{ secrets.ALCHEMY_STATE_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ALCHEMY_CI_STATE_STORE_CHECK: false
+          ALCHEMY_DISABLE_STATE_STORE: true

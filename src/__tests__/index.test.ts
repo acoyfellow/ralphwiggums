@@ -5,11 +5,21 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import type { RalphOptions, RalphResult } from "../index.js";
 
-// Import the module to test
-import { run, ValidationError, MaxIterationsError, TimeoutError, BrowserError, RateLimitError, UnauthorizedError } from "../index.js";
-import { setContainerFetch } from "../index.js";
+// Mock Cloudflare dependencies before importing the module
+vi.mock("cloudflare:workers", () => ({
+  fetch: vi.fn(),
+}));
+vi.mock("@cloudflare/containers", () => ({
+  Container: vi.fn(),
+  getContainer: vi.fn(),
+  switchPort: vi.fn(),
+}));
+
+// Mock the module to test
+import type { RalphOptions, RalphResult } from "../../dist/src/index.js";
+import { run, ValidationError, MaxIterationsError, TimeoutError, BrowserError, RateLimitError, UnauthorizedError } from "../../dist/src/index.js";
+import { setContainerFetch } from "../../dist/src/index.js";
 
 // ============================================================================
 // Mock Setup
