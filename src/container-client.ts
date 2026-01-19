@@ -1,5 +1,3 @@
-import { Container } from "@cloudflare/containers";
-
 let _containerBinding: any = null;
 let _containerFetch: ((path: string, body?: object) => Promise<any>) | null = null;
 let _containerUrl: string | null = null;
