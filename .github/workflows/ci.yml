@@ -58,7 +58,7 @@ jobs:
       - name: Run unit tests
         run: bun test src/__tests__/index.test.ts src/__tests__/promise-tag.test.ts src/__tests__/checkpoint-do.test.ts
 
-  route-floop:
+  ralph-loop:
     name: Ralph Loop (Health Check with Retry Loop)
     needs: test
     if: ${{ github.event_name == 'pull_request' }}
@@ -72,10 +72,13 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Install dependencies
+        run: bun install
+
       - name: Deploy to PR environment
         run: |
           STAGE="pr-${{ github.event.number }}"
-          bun alchemy deploy --stage "$STAGE"
+          bunx alchemy deploy --stage "$STAGE"
         env:
           ALCHEMY_PASSWORD: ${{ secrets.ALCHEMY_PASSWORD }}
           ALCHEMY_STATE_TOKEN: ${{ secrets.ALCHEMY_STATE_TOKEN }}
@@ -90,7 +93,7 @@ jobs:
         run: sleep 30
 
       - name: Ralph Loop - Health Check with Retry Loop (Max 5)
-        id: route-floop
+        id: ralph-loop
         run: |
           STAGE="pr-${{ github.event.number }}"
           URL="https://$STAGE.api.coey.dev"
@@ -132,7 +135,7 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const status = '${{ steps.route-floop.outcome }}' === 'success' ? '✅ Success' : '❌ Failed';
+            const status = '${{ steps.ralph-loop.outcome }}' === 'success' ? '✅ Success' : '❌ Failed';
             const stage = 'pr-${{ github.event.number }}';
             const comment = `## Deployment Status
 
@@ -169,7 +172,7 @@ jobs:
         run: bun install
 
       - name: Deploy to staging
-        run: STAGE=staging bun alchemy deploy --stage staging
+        run: STAGE=staging bunx alchemy deploy --stage staging
         env:
           ALCHEMY_PASSWORD: ${{ secrets.ALCHEMY_PASSWORD }}
           ALCHEMY_STATE_TOKEN: ${{ secrets.ALCHEMY_STATE_TOKEN }}
@@ -228,7 +231,7 @@ jobs:
         run: bun install
 
       - name: Deploy to production
-        run: STAGE=prod bun alchemy deploy --stage prod
+        run: STAGE=prod bunx alchemy deploy --stage prod
         env:
           ALCHEMY_PASSWORD: ${{ secrets.ALCHEMY_PASSWORD }}
           ALCHEMY_STATE_TOKEN: ${{ secrets.ALCHEMY_STATE_TOKEN }}
@@ -294,7 +297,7 @@ jobs:
       - name: Retry production deployment (Auto-heal)
         run: |
           echo "🔧 Auto-healing: Retrying production deployment"
-          STAGE=prod bun alchemy deploy --stage prod
+          STAGE=prod bunx alchemy deploy --stage prod
         env:
           ALCHEMY_PASSWORD: ${{ secrets.ALCHEMY_PASSWORD }}
           ALCHEMY_STATE_TOKEN: ${{ secrets.ALCHEMY_STATE_TOKEN }}
@@ -332,6 +335,9 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Install dependencies
+        run: bun install
+
       - name: Safety Check
         run: |
           STAGE="pr-${{ github.event.number }}"
@@ -343,7 +349,7 @@ jobs:
 
       - name: Destroy Preview Environment
         run: |
-          bun alchemy destroy --stage "pr-${{ github.event.number }}"
+          bunx alchemy destroy --stage "pr-${{ github.event.number }}"
         env:
           ALCHEMY_PASSWORD: ${{ secrets.ALCHEMY_PASSWORD }}
           ALCHEMY_STATE_TOKEN: ${{ secrets.ALCHEMY_STATE_TOKEN }}
