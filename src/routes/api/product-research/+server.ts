@@ -12,6 +12,7 @@ interface WorkerResponse {
   data?: unknown;
   message?: string;
   error?: string;
+  iterations?: number;
 }
 
 // Production API worker URL - use direct HTTP instead of service binding

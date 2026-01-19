@@ -1,4 +1,4 @@
-name: Deploy with Route Floop
+name: Deploy with Ralph Loop
 
 on:
   push:
@@ -10,7 +10,7 @@ env:
   # Stage determined by event type
   STAGE: >-
     ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || (github.ref == 'refs/heads/main' && 'prod' || github.ref_name) }}
-  # Retry configuration for Route Floop
+  # Retry configuration for Ralph Loop
   MAX_RETRIES: 5
   RETRY_DELAY: 5
 
@@ -37,6 +37,22 @@ jobs:
 
       - name: Build project
         run: bun run build
+
+      - name: Verify build output
+        run: |
+          if [ ! -f "dist/src/index.js" ]; then
+            echo "❌ Build output not found: dist/src/index.js"
+            exit 1
+          fi
+          echo "✅ Build output verified"
+
+      - name: Verify SvelteKit build
+        run: |
+          if [ ! -d ".svelte-kit" ]; then
+            echo "❌ SvelteKit build directory not found"
+            exit 1
+          fi
+          echo "✅ SvelteKit build verified"
 
       - name: Run test suite
         run: bun test src/__tests__/
@@ -76,7 +92,7 @@ jobs:
           ALCHEMY_CI_STATE_STORE_CHECK: false
 
   route-floop:
-    name: Route Floop (Health Check with Error Loop)
+    name: Ralph Loop (Health Check with Error Loop)
     needs: deploy
     runs-on: ubuntu-latest
     steps:
@@ -91,7 +107,7 @@ jobs:
       - name: Wait for deployment
         run: sleep 30
 
-      - name: Route Floop - Health Check with Max 5 Retries
+      - name: Ralph Loop - Health Check with Max 5 Retries
         id: health-check
         uses: nick-fields/retry-action@v2
         with:
@@ -99,7 +115,7 @@ jobs:
           max_attempts: ${{ env.MAX_RETRIES }}
           retry_wait_seconds: ${{ env.RETRY_DELAY }}
           on_retry_command: |
-            echo "⚠️ Route Floop: Health check failed (attempt ${{ steps.health-check.outputs.attempt }}/${{ env.MAX_RETRIES }})"
+            echo "⚠️ Ralph Loop: Health check failed (attempt ${{ steps.health-check.outputs.attempt }}/${{ env.MAX_RETRIES }})"
             echo "Waiting ${{ env.RETRY_DELAY }}s before retry..."
           command: |
             STAGE="${{ env.STAGE }}"
@@ -116,7 +132,7 @@ jobs:
               DEMO_URL="https://${STAGE}.coey.dev"
             fi
 
-            echo "🔄 Route Floop: Checking health at $URL"
+            echo "🔄 Ralph Loop: Checking health at $URL"
 
             # Check API health endpoint
             API_RESPONSE=$(curl -s -w "\n%{http_code}" -o /dev/null "$URL/health")
@@ -164,7 +180,7 @@ jobs:
             const stage = '${{ env.STAGE }}';
             const attempts = '${{ steps.health-check.outputs.attempt }}' || 'unknown';
 
-            const comment = `## Deployment Status - Route Floop
+            const comment = `## Deployment Status - Ralph Loop
 
             **Stage:** ${stage}
             **Status:** ${status}
@@ -174,7 +190,7 @@ jobs:
             **Demo URL:** https://${stage}.coey.dev
 
             ---
-            *Route Floop completed with error retry loop (max 5 retries)*`;
+            *Ralph Loop completed with error retry loop (max 5 retries)*`;
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -182,6 +198,67 @@ jobs:
               repo: context.repo.repo,
               body: comment
             });
+
+  auto-heal:
+    name: Auto-heal Failed Deployment
+    needs: [deploy]
+    if: failure() && needs.deploy.result == 'failure'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Retry deployment (Auto-heal)
+        run: |
+          echo "🔧 Auto-healing: Retrying deployment for stage ${{ env.STAGE }}"
+          bun alchemy deploy --stage ${{ env.STAGE }}
+        env:
+          STAGE: ${{ env.STAGE }}
+          ALCHEMY_PASSWORD: ${{ secrets.ALCHEMY_PASSWORD }}
+          ALCHEMY_STATE_TOKEN: ${{ secrets.ALCHEMY_STATE_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ZEN_API_KEY: ${{ secrets.ZEN_API_KEY }}
+          RALPH_API_KEY: ${{ secrets.RALPH_API_KEY }}
+          PULL_REQUEST: ${{ github.event.number }}
+          GITHUB_SHA: ${{ github.sha }}
+          ALCHEMY_CI_STATE_STORE_CHECK: false
+
+      - name: Wait for deployment
+        run: sleep 30
+
+      - name: Verify auto-heal success
+        run: |
+          STAGE="${{ env.STAGE }}"
+          if [ "$STAGE" = "prod" ]; then
+            URL="https://ralphwiggums-api.coey.dev"
+          elif [ "$STAGE" = "staging" ]; then
+            URL="https://ralphwiggums-staging.api.coey.dev"
+          else
+            URL="https://${STAGE}.api.coey.dev"
+          fi
+          
+          echo "🔄 Verifying auto-healed deployment at $URL"
+          RESPONSE=$(curl -s -w "\n%{http_code}" -o /dev/null "$URL/health")
+          
+          if [ "$RESPONSE" = "200" ]; then
+            echo "✅ Auto-heal successful!"
+            exit 0
+          else
+            echo "❌ Auto-heal failed: $RESPONSE"
+            exit 1
+          fi
 
   cleanup:
     name: Cleanup PR Preview
