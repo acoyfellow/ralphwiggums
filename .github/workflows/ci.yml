@@ -131,7 +131,7 @@ jobs:
         with:
           script: |
             const status = '${{ steps.route-floop.outcome }}' === 'success' ? '✅ Success' : '❌ Failed';
-            const stage = 'pr-${{ context.payload.pull_request.number }}';
+            const stage = 'pr-${{ github.event.number }}';
             const comment = `## Deployment Status
 
             **Stage:** ${stage}
@@ -254,7 +254,7 @@ jobs:
   auto-heal-prod:
     name: Auto-heal Failed Production Deployment
     needs: [deploy-prod]
-    if: failure() && needs.deploy-prod.result == 'failure'
+    if: needs.deploy-prod.result == 'failure'
     runs-on: ubuntu-latest
     environment: production
     steps:

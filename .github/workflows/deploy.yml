@@ -202,7 +202,7 @@ jobs:
   auto-heal:
     name: Auto-heal Failed Deployment
     needs: [deploy]
-    if: failure() && needs.deploy.result == 'failure'
+    if: needs.deploy.result == 'failure'
     runs-on: ubuntu-latest
     permissions:
       contents: read
