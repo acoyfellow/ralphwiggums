@@ -13,11 +13,12 @@ const project = "ralphwiggums";
 
 const app = await alchemy(project, {
   password: process.env.ALCHEMY_PASSWORD || "abc123",
-  stateStore: (scope) => new CloudflareStateStore(scope, {
-    scriptName: `${project}-state`,
-    stateToken: alchemy.secret(process.env.ALCHEMY_STATE_TOKEN || ""),
-    forceUpdate: true,
-  }),
+  // Temporarily disable state store to bypass corruption
+  // stateStore: (scope) => new CloudflareStateStore(scope, {
+  //   scriptName: `${project}-state`,
+  //   stateToken: alchemy.secret(process.env.ALCHEMY_STATE_TOKEN || ""),
+  //   forceUpdate: true,
+  // }),
 });
 
 const browserContainer = await Container(`${project}-container`, {

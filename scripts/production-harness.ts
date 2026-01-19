@@ -35,7 +35,23 @@ class ProductionHarness {
     // Layer 2: Worker API endpoints
     await this.testWorkerAPI();
 
-    // Layer 3: Durable Objects (if API works)
+    // Layer 2.5: Demo UI functionality (tests the actual user flow)
+    if (this.results.find(r => r.layer === 'Frontend')?.status === 'PASS') {
+      await this.testDemoUI();
+    }
+
+    // Layer 3: Worker Direct Test (always run to isolate container issues)
+    await this.testWorkerDirectly();
+
+    // Layer 4: Demo UI (if frontend works)
+    if (this.results.find(r => r.layer === 'Frontend')?.status === 'PASS') {
+      await this.testDemoUI();
+    }
+
+    // Layer 3.5: Worker Direct Test (always test to isolate container issues)
+    await this.testWorkerDirectly();
+
+    // Layer 4: Durable Objects (if API works)
     if (this.results.find(r => r.layer === 'Worker API')?.status === 'PASS') {
       await this.testDurableObjects();
     }
@@ -76,13 +92,24 @@ class ProductionHarness {
         return;
       }
 
-      // Test demo form exists
-      if (!html.includes('Run Extraction') && !html.includes('Target URL')) {
+      // Test demo form exists with "Run Extraction" button
+      if (!html.includes('Run Extraction')) {
         this.results.push({
           layer: 'Frontend',
           status: 'FAIL',
-          message: 'Demo form not found on homepage',
-          details: { hasForm: false }
+          message: '"Run Extraction" button not found on homepage',
+          details: { hasRunExtractionButton: false, htmlSample: html.substring(0, 500) }
+        });
+        return;
+      }
+
+      // Test for form inputs
+      if (!html.includes('Target URL') && !html.includes('url=')) {
+        this.results.push({
+          layer: 'Frontend',
+          status: 'FAIL',
+          message: 'URL input field not found on homepage',
+          details: { hasUrlInput: false }
         });
         return;
       }
@@ -90,8 +117,8 @@ class ProductionHarness {
       this.results.push({
         layer: 'Frontend',
         status: 'PASS',
-        message: 'Homepage loads correctly with demo form',
-        details: { status: response.status, hasDemoForm: true }
+        message: 'Homepage loads correctly with "Run Extraction" button',
+        details: { status: response.status, hasRunExtractionButton: true, hasUrlInput: true }
       });
 
     } catch (error) {
@@ -233,6 +260,204 @@ class ProductionHarness {
     }
   }
 
+  private async testDemoUI(): Promise<void> {
+    console.log('🎯 Testing Demo UI (Run Extraction button)...');
+
+    try {
+      // Test the actual demo endpoint that the UI calls
+      // This simulates clicking "Run Extraction" with form data
+      // Use the exact same request that the user reported failing
+      const demoRequest = {
+        url: 'https://amazon.com/dp/B09V3KXJPB',
+        instructions: 'name, price, description, key features, star rating, in stock status'
+      };
+
+      console.log('   📤 Testing SvelteKit API endpoint (/api/product-research)...');
+
+      const response = await fetch(`${PRODUCTION_URL}/api/product-research`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'RalphWiggums-ProductionHarness/1.0'
+        },
+        body: JSON.stringify(demoRequest)
+      });
+
+      if (!response.ok) {
+        let errorText = '';
+        let responseHeaders = {};
+        try {
+          errorText = await response.text();
+        } catch (e) {
+          errorText = 'Could not read error response';
+        }
+
+        // Capture all response headers for debugging
+        for (const [key, value] of response.headers.entries()) {
+          responseHeaders[key] = value;
+        }
+
+        console.log(`   ❌ API call failed: ${response.status} ${response.statusText}`);
+        console.log(`   📄 Error response: ${errorText}`);
+        console.log(`   📋 Response headers:`, responseHeaders);
+
+        this.results.push({
+          layer: 'Demo UI',
+          status: 'FAIL',
+          message: `Demo API failed: ${response.status} ${response.statusText} - "${errorText}"`,
+          details: {
+            status: response.status,
+            statusText: response.statusText,
+            errorText: errorText,
+            responseHeaders: responseHeaders,
+            requestData: demoRequest,
+            url: `${PRODUCTION_URL}/api/product-research`
+          }
+        });
+        await this.debugWorkerLogs('Demo UI API call failing');
+        return;
+      }
+
+      let result;
+      try {
+        result = await response.json();
+      } catch (parseError) {
+        this.results.push({
+          layer: 'Demo UI',
+          status: 'FAIL',
+          message: `Demo API returned invalid JSON: ${parseError.message}`,
+          details: { parseError: parseError.message, status: response.status }
+        });
+        await this.debugWorkerLogs('Demo UI returning invalid JSON');
+        return;
+      }
+
+      if (!result.success) {
+        this.results.push({
+          layer: 'Demo UI',
+          status: 'FAIL',
+          message: 'Demo API returned success=false',
+          details: { result: result, requestData: demoRequest }
+        });
+        await this.debugWorkerLogs('Demo UI returning error responses');
+        return;
+      }
+
+      // Check that we got actual extraction results
+      if (!result.data || (typeof result.data === 'string' && result.data.trim().length === 0)) {
+        this.results.push({
+          layer: 'Demo UI',
+          status: 'FAIL',
+          message: 'Demo API returned empty or invalid data',
+          details: { result: result, requestData: demoRequest }
+        });
+        await this.debugWorkerLogs('Demo UI returning empty results');
+        return;
+      }
+
+      this.results.push({
+        layer: 'Demo UI',
+        status: 'PASS',
+        message: 'Demo UI "Run Extraction" functionality works correctly',
+        details: {
+          requestData: demoRequest,
+          result: result,
+          dataLength: typeof result.data === 'string' ? result.data.length : 'object',
+          iterations: result.iterations || 0
+        }
+      });
+
+    } catch (error) {
+      this.results.push({
+        layer: 'Demo UI',
+        status: 'FAIL',
+        message: `Demo UI test failed: ${error.message}`,
+        details: error
+      });
+      await this.debugWorkerLogs('Demo UI connection failed');
+    }
+  }
+
+  private async testWorkerDirectly(): Promise<void> {
+    console.log('⚙️ Testing Worker /do endpoint directly...');
+
+    try {
+      // Test the worker's /do endpoint directly (what SvelteKit calls internally)
+      const workerRequest = {
+        prompt: 'Go to https://example.com and extract: title',
+        maxIterations: 1,
+        timeout: 30000
+      };
+
+      const response = await fetch(`https://ralphwiggums-api.coey.dev/do`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(workerRequest)
+      });
+
+      let result;
+      const responseText = await response.text();
+
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        result = { rawResponse: responseText, parseError: parseError.message };
+      }
+
+      if (!response.ok) {
+        console.log(`   ❌ Worker /do endpoint failed: ${response.status} ${response.statusText}`);
+        console.log(`   📄 Response: ${responseText}`);
+
+        this.results.push({
+          layer: 'Worker Direct',
+          status: 'FAIL',
+          message: `Worker /do endpoint failed: ${response.status} ${response.statusText}`,
+          details: {
+            status: response.status,
+            statusText: response.statusText,
+            response: result,
+            request: workerRequest,
+            url: 'https://ralphwiggums-api.coey.dev/do'
+          }
+        });
+        await this.debugWorkerLogs('Worker /do endpoint failing directly');
+        return;
+      }
+
+      if (!result.success) {
+        console.log(`   ❌ Worker returned success=false: ${result.error || result.message}`);
+
+        this.results.push({
+          layer: 'Worker Direct',
+          status: 'FAIL',
+          message: `Worker returned error: ${result.error || result.message}`,
+          details: {
+            response: result,
+            request: workerRequest
+          }
+        });
+        await this.debugWorkerLogs('Worker returning errors');
+        return;
+      }
+
+      this.results.push({
+        layer: 'Worker Direct',
+        status: 'PASS',
+        message: 'Worker /do endpoint working correctly',
+        details: { response: result, request: workerRequest }
+      });
+
+    } catch (error) {
+      this.results.push({
+        layer: 'Worker Direct',
+        status: 'FAIL',
+        message: `Worker direct test failed: ${error.message}`,
+        details: error
+      });
+      await this.debugWorkerLogs('Worker direct connection failed');
+    }
+  }
+
   private async testDurableObjects(): Promise<void> {
     console.log('🏗️ Testing Durable Objects...');
 
@@ -265,20 +490,30 @@ class ProductionHarness {
     console.log(`      wrangler tail ralphwiggums-ralphwiggums-api-prod`);
     console.log('');
 
+    // Always show manual debugging steps first
+    console.log('   🔍 IMMEDIATE DEBUGGING STEPS:');
+    console.log('   1. Check if container is bound: curl https://ralphwiggums.coey.dev/debug');
+    console.log('   2. Check worker environment: curl https://ralphwiggums.coey.dev/debug-env');
+    console.log('   3. Manual tail: wrangler tail ralphwiggums-ralphwiggums-api-prod --format pretty');
+    console.log('');
+
     if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_API_TOKEN) {
-      console.log('   ⚠️  CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN not set');
-      console.log('      Set these environment variables to enable automatic log tailing');
+      console.log('   ⚠️  CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN not set for automatic log tailing');
+      console.log('   🔧 To enable automatic debugging, set:');
+      console.log('      export CLOUDFLARE_ACCOUNT_ID=your_account_id');
+      console.log('      export CLOUDFLARE_API_TOKEN=your_api_token');
       console.log('');
       return;
     }
 
-    console.log('   📊 Attempting automatic worker log tailing...');
+    console.log('   📊 Attempting automatic worker log tailing (15 seconds)...');
 
     try {
-      // Start wrangler tail in background for 10 seconds
+      // Start wrangler tail in background for 15 seconds
       const tailProcess = Bun.spawn([
         'wrangler', 'tail', 'ralphwiggums-ralphwiggums-api-prod',
-        '--format', 'pretty'
+        '--format', 'pretty',
+        '--since', '5m'  // Only show recent logs
       ], {
         stdout: 'pipe',
         stderr: 'pipe',
@@ -289,10 +524,10 @@ class ProductionHarness {
         }
       });
 
-      // Read logs for 10 seconds
+      // Read logs for 15 seconds
       const timeout = setTimeout(() => {
         tailProcess.kill();
-      }, 10000);
+      }, 15000);
 
       const output = await new Response(tailProcess.stdout).text();
       const errorOutput = await new Response(tailProcess.stderr).text();
@@ -301,15 +536,19 @@ class ProductionHarness {
 
       if (errorOutput) {
         console.log('   ❌ Worker log tailing failed:', errorOutput.trim());
-      } else if (output) {
-        console.log('   📋 Recent worker logs:');
-        console.log(output.split('\n').slice(-5).join('\n'));
+        console.log('   💡 Try manual tailing: wrangler tail ralphwiggums-ralphwiggums-api-prod');
+      } else if (output && output.trim()) {
+        console.log('   📋 Recent worker logs (last 10 lines):');
+        const lines = output.split('\n').filter(line => line.trim());
+        console.log(lines.slice(-10).join('\n'));
       } else {
-        console.log('   🤷 No recent worker logs found');
+        console.log('   🤷 No recent worker logs found (logs might be delayed)');
+        console.log('   💡 Try again in a few minutes or check manually');
       }
 
     } catch (error) {
       console.log('   ❌ Failed to tail worker logs:', error.message);
+      console.log('   💡 Try manual tailing: wrangler tail ralphwiggums-ralphwiggums-api-prod');
     }
 
     console.log('');

@@ -138,7 +138,7 @@ console.log(result.data);`;
 </svelte:head>
 
 <div
-  class="flex min-h-screen bg-slate-900 font-mono text-slate-50 leading-[1.6] antialiased"
+  class="flex min-h-screen bg-slate-900 font-mono text-slate-50 leading-[1.6] antialiased overflow-x-hidden"
   style="font-family: 'Google Sans Code', Monaco, Consolas, monospace;"
 >
   <!-- Sidebar -->
@@ -285,9 +285,9 @@ console.log(result.data);`;
       >
     </header>
 
-    <div class="max-w-[1000px] mx-auto px-6 lg:px-12">
+    <div class="max-w-[1000px] mx-auto px-4 sm:px-6 lg:px-12">
       <!-- Hero -->
-      <section id="overview" class="py-20 pb-15 border-b border-slate-700">
+      <section id="overview" class="py-12 sm:py-16 lg:py-20 pb-10 sm:pb-12 lg:pb-15 border-b border-slate-700">
         <div
           class="inline-flex items-center gap-2 px-3 py-1.5 bg-cyan-400/15 border border-cyan-400/30 rounded text-[11px] text-cyan-400 tracking-[0.08em] font-semibold mb-8 animate-fade-in-up"
         >
@@ -295,10 +295,10 @@ console.log(result.data);`;
           Browser Automation
         </div>
 
-        <div class="mb-8 animate-fade-in-up relative w-[560px]">
+        <div class="mb-8 animate-fade-in-up relative w-full max-w-[560px]">
           <div
             class="relative rounded-lg border border-slate-700 shadow-lg overflow-hidden"
-            style="width: 560px; height: 315px;"
+            style="aspect-ratio: 16/9;"
           >
             {#each heroImages as img, index}
               <div
@@ -308,7 +308,7 @@ console.log(result.data);`;
                 <img
                   src={img}
                   alt="Ralph Wiggum slideshow"
-                  style="width: 100%; height: 100%; object-fit: cover; object-position: center;"
+                  class="w-full h-full object-cover object-center"
                 />
               </div>
             {/each}
@@ -316,14 +316,14 @@ console.log(result.data);`;
         </div>
 
         <h1
-          class="font-sans text-[clamp(32px,5vw,48px)] font-bold leading-[1.1] tracking-[-0.03em] mb-6 animate-fade-in-up"
+          class="font-sans text-[clamp(28px,5vw,48px)] font-bold leading-[1.1] tracking-[-0.03em] mb-4 sm:mb-6 animate-fade-in-up"
         >
-          The Ralph Wiggum Technique.<br />
+          The Ralph Wiggum Technique.<br class="hidden sm:block" />
           <span class="text-cyan-400">Now it's a library.</span>
         </h1>
 
         <p
-          class="text-[15px] text-slate-400 max-w-[560px] leading-[1.7] mb-5 animate-fade-in-up"
+          class="text-sm sm:text-[15px] text-slate-400 max-w-[560px] leading-[1.7] mb-4 sm:mb-5 animate-fade-in-up"
         >
           AI agents in loops, doing browser automation. Simple enough to work.
           Persistent enough to finish. The technique that shipped codebases
@@ -341,26 +341,26 @@ console.log(result.data);`;
 
         <button
           onclick={copyCommand}
-          class="inline-flex items-center gap-3 px-6 py-4 bg-slate-800 border border-slate-700 rounded-lg text-base animate-fade-in-up cursor-pointer transition-all duration-200 hover:border-slate-600 hover:bg-slate-800"
+          class="inline-flex flex-wrap items-center gap-2 sm:gap-3 px-4 sm:px-6 py-4 bg-slate-800 border border-slate-700 rounded-lg text-sm sm:text-base animate-fade-in-up cursor-pointer transition-all duration-200 hover:border-slate-600 hover:bg-slate-800 w-full sm:w-auto"
         >
           <span class="text-cyan-400 select-none">$</span>
-          <span class="text-slate-50">npm install ralphwiggums</span>
+          <span class="text-slate-50 break-all sm:break-normal">npm install ralphwiggums</span>
           <span
-            class="inline-block w-2.5 h-[1.2em] bg-cyan-400 ml-0.5 align-text-bottom animate-blink"
+            class="inline-block w-2.5 h-[1.2em] bg-cyan-400 ml-0.5 align-text-bottom animate-blink flex-shrink-0"
           ></span>
-          <span class="text-slate-400 text-[11px] ml-4">click to copy</span>
+          <span class="text-slate-400 text-[11px] ml-0 sm:ml-4 w-full sm:w-auto text-center sm:text-left">click to copy</span>
         </button>
       </section>
 
       <!-- Installation -->
-      <section id="install" class="py-20 border-b border-slate-700">
+      <section id="install" class="py-12 sm:py-16 lg:py-20 border-b border-slate-700">
         <div class="mb-12">
           <div
             class="text-[11px] tracking-widest text-cyan-400 mb-4 font-semibold"
           >
             // Installation
           </div>
-          <h2 class="font-sans text-[28px] font-bold tracking-[-0.02em] mb-3">
+          <h2 class="font-sans text-2xl sm:text-[28px] font-bold tracking-[-0.02em] mb-3">
             Get started in seconds
           </h2>
           <p class="text-base text-slate-400 max-w-[480px]">
@@ -378,13 +378,13 @@ console.log(result.data);`;
             <span class="w-3 h-3 rounded-full bg-red-500"></span>
             <span class="w-3 h-3 rounded-full bg-yellow-500"></span>
             <span class="w-3 h-3 rounded-full bg-green-500"></span>
-            <span
-              class="flex-1 text-center text-[12px] text-slate-400 mr-[52px]"
-              >terminal</span
-            >
+              <span
+                class="flex-1 text-center text-[12px] text-slate-400 mr-0 sm:mr-[52px]"
+                >terminal</span
+              >
           </div>
           <div
-            class="p-5 text-[13px] leading-[1.7] min-h-[200px] overflow-x-auto font-mono"
+            class="p-4 sm:p-5 text-[13px] leading-[1.7] min-h-[200px] overflow-x-auto font-mono break-words"
           >
             <div class="mb-1">
               <span class="text-slate-400"># Install the package</span>
@@ -411,14 +411,14 @@ console.log(result.data);`;
       </section>
 
       <!-- How It Works -->
-      <section id="how" class="py-20 border-b border-slate-700">
+      <section id="how" class="py-12 sm:py-16 lg:py-20 border-b border-slate-700">
         <div class="mb-12">
           <div
             class="text-[11px] tracking-widest text-cyan-400 mb-4 font-semibold"
           >
             // The Technique
           </div>
-          <h2 class="font-sans text-[28px] font-bold tracking-[-0.02em] mb-3">
+          <h2 class="font-sans text-2xl sm:text-[28px] font-bold tracking-[-0.02em] mb-3">
             How it works
           </h2>
           <p class="text-base text-slate-400 max-w-[480px]">
@@ -430,7 +430,7 @@ console.log(result.data);`;
           <div
             class="p-6 bg-slate-800 border border-slate-700 rounded-lg transition-all duration-200 hover:border-slate-600"
           >
-            <div class="grid grid-cols-[48px_1fr] gap-5 mb-4">
+            <div class="grid grid-cols-[48px_1fr] gap-3 sm:gap-5 mb-4">
               <div
                 class="w-12 h-12 flex items-center justify-center bg-slate-800 border border-slate-700 rounded-md text-[18px] font-bold text-cyan-400"
               >
@@ -452,7 +452,7 @@ console.log(result.data);`;
           <div
             class="p-6 bg-slate-800 border border-slate-700 rounded-lg transition-all duration-200 hover:border-slate-600"
           >
-            <div class="grid grid-cols-[48px_1fr] gap-5 mb-4">
+            <div class="grid grid-cols-[48px_1fr] gap-3 sm:gap-5 mb-4">
               <div
                 class="w-12 h-12 flex items-center justify-center bg-slate-800 border border-slate-700 rounded-md text-[18px] font-bold text-cyan-400"
               >
@@ -474,7 +474,7 @@ console.log(result.data);`;
           <div
             class="p-6 bg-slate-800 border border-slate-700 rounded-lg transition-all duration-200 hover:border-slate-600"
           >
-            <div class="grid grid-cols-[48px_1fr] gap-5 mb-4">
+            <div class="grid grid-cols-[48px_1fr] gap-3 sm:gap-5 mb-4">
               <div
                 class="w-12 h-12 flex items-center justify-center bg-slate-800 border border-slate-700 rounded-md text-[18px] font-bold text-cyan-400"
               >
@@ -496,17 +496,17 @@ console.log(result.data);`;
 
       <!-- Endgame Showcase -->
       <section
-        class="py-[100px] bg-linear-to-b from-slate-900 via-slate-800 to-slate-900 border-t border-b border-slate-700 relative overflow-hidden"
+        class="py-12 sm:py-20 lg:py-[100px] bg-linear-to-b from-slate-900 via-slate-800 to-slate-900 border-t border-b border-slate-700 relative overflow-hidden"
       >
         <div
           class="absolute inset-0 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(34,211,238,0.03)_2px,rgba(34,211,238,0.03)_4px)] pointer-events-none animate-glitch-scan"
         ></div>
-        <div class="relative max-w-[900px] mx-auto">
+        <div class="relative max-w-[900px] mx-auto px-4 sm:px-6">
           <div
             class="relative rounded-xl overflow-hidden border-2 border-slate-700 bg-slate-800 animate-pulse-glow transition-all duration-300 hover:scale-[1.02] hover:border-cyan-400 hover:animate-[glitch_0.3s_ease-in-out,pulse-glow_4s_ease-in-out_infinite]"
           >
             <div
-              class="absolute top-6 right-6 px-4 py-2 bg-cyan-400/15 border border-cyan-400/30 rounded-md text-[11px] text-cyan-400 tracking-widest font-semibold z-4 backdrop-blur-md"
+              class="absolute top-3 right-3 sm:top-6 sm:right-6 px-3 sm:px-4 py-1.5 sm:py-2 bg-cyan-400/15 border border-cyan-400/30 rounded-md text-[10px] sm:text-[11px] text-cyan-400 tracking-widest font-semibold z-4 backdrop-blur-md"
             >
               The Endgame
             </div>
@@ -519,10 +519,10 @@ console.log(result.data);`;
               class="absolute top-0 left-0 right-0 bottom-0 bg-linear-to-b from-transparent via-transparent to-[rgba(15,23,42,0.7)] pointer-events-none z-2"
             ></div>
             <div
-              class="absolute bottom-0 left-0 right-0 p-8 z-3 bg-linear-to-t from-transparent to-[rgba(15,23,42,0.95)]"
+              class="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-8 z-3 bg-linear-to-t from-transparent to-[rgba(15,23,42,0.95)]"
             >
               <div
-                class="text-[15px] text-slate-400 leading-[1.6] max-w-[600px]"
+                class="text-sm sm:text-[15px] text-slate-400 leading-[1.6] max-w-[600px]"
               >
                 When the physics engine has too many dependencies, you <span
                   class="text-cyan-400 font-semibold">deprecate gravity</span
@@ -536,14 +536,14 @@ console.log(result.data);`;
       </section>
 
       <!-- Features -->
-      <section id="features" class="py-20 border-b border-slate-700">
+      <section id="features" class="py-12 sm:py-16 lg:py-20 border-b border-slate-700">
         <div class="mb-12">
           <div
             class="text-[11px] tracking-widest text-cyan-400 mb-4 font-semibold"
           >
             // Philosophy
           </div>
-          <h2 class="font-sans text-[28px] font-bold tracking-[-0.02em] mb-3">
+          <h2 class="font-sans text-2xl sm:text-[28px] font-bold tracking-[-0.02em] mb-3">
             Why it works
           </h2>
           <p class="text-base text-slate-400 max-w-[480px]">
@@ -645,14 +645,14 @@ console.log(result.data);`;
       </section>
 
       <!-- Demo -->
-      <section id="demo" class="py-20 border-b border-slate-700">
+      <section id="demo" class="py-12 sm:py-16 lg:py-20 border-b border-slate-700">
         <div class="mb-12">
           <div
             class="text-[11px] tracking-widest text-cyan-400 mb-4 font-semibold"
           >
             // Interactive
           </div>
-          <h2 class="font-sans text-[28px] font-bold tracking-[-0.02em] mb-3">
+          <h2 class="font-sans text-2xl sm:text-[28px] font-bold tracking-[-0.02em] mb-3">
             Try it now
           </h2>
           <p class="text-base text-slate-400 max-w-[480px]">
@@ -660,8 +660,8 @@ console.log(result.data);`;
           </p>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div class="bg-slate-800 border border-slate-700 rounded-lg p-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 sm:p-6">
             <form
               onsubmit={(e) => {
                 e.preventDefault();
@@ -678,7 +678,7 @@ console.log(result.data);`;
                   id="url-input"
                   type="url"
                   bind:value={url}
-                  class="w-full px-3.5 py-3 bg-slate-800 border border-slate-700 rounded-md font-mono text-sm text-slate-50 transition-all duration-150 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_0_3px_rgba(34,211,238,0.15)]"
+                  class="w-full px-3.5 py-3 bg-slate-800 border border-slate-700 rounded-md font-mono text-xs sm:text-sm text-slate-50 transition-all duration-150 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_0_3px_rgba(34,211,238,0.15)] break-all"
                   placeholder="https://example.com/product"
                 />
               </div>
@@ -692,7 +692,7 @@ console.log(result.data);`;
                 <select
                   id="task-select"
                   bind:value={taskType}
-                  class="w-full px-3.5 py-3 bg-slate-800 border border-slate-700 rounded-md font-mono text-sm text-slate-50 transition-all duration-150 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_0_3px_rgba(34,211,238,0.15)] cursor-pointer"
+                  class="w-full px-3.5 py-3 bg-slate-800 border border-slate-700 rounded-md font-mono text-xs sm:text-sm text-slate-50 transition-all duration-150 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_0_3px_rgba(34,211,238,0.15)] cursor-pointer"
                 >
                   <option value="extract">Extract Product Details</option>
                   <option value="compare">Compare Prices</option>
@@ -709,7 +709,7 @@ console.log(result.data);`;
                 <textarea
                   id="instructions-input"
                   bind:value={instructions}
-                  class="w-full px-3.5 py-3 bg-slate-800 border border-slate-700 rounded-md font-mono text-sm text-slate-50 transition-all duration-150 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_0_3px_rgba(34,211,238,0.15)] min-h-[80px] resize-y"
+                  class="w-full px-3.5 py-3 bg-slate-800 border border-slate-700 rounded-md font-mono text-xs sm:text-sm text-slate-50 transition-all duration-150 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_0_3px_rgba(34,211,238,0.15)] min-h-[80px] resize-y break-words"
                   placeholder="What to extract..."
                 ></textarea>
               </div>
@@ -718,7 +718,7 @@ console.log(result.data);`;
                 type="button"
                 onclick={extract}
                 disabled={loading}
-                class="w-full px-5 py-3.5 bg-indigo-500 border-0 rounded-md font-mono text-sm font-semibold text-white cursor-pointer transition-all duration-150 hover:bg-indigo-600 hover:-translate-y-px active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-500 disabled:hover:translate-y-0"
+                class="w-full px-4 sm:px-5 py-3 sm:py-3.5 bg-indigo-500 border-0 rounded-md font-mono text-xs sm:text-sm font-semibold text-white cursor-pointer transition-all duration-150 hover:bg-indigo-600 hover:-translate-y-px active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-500 disabled:hover:translate-y-0"
               >
                 {#if loading}
                   <span class="flex items-center justify-center gap-2">
@@ -757,19 +757,19 @@ console.log(result.data);`;
               <span class="w-3 h-3 rounded-full bg-yellow-500"></span>
               <span class="w-3 h-3 rounded-full bg-green-500"></span>
               <span
-                class="flex-1 text-center text-[12px] text-slate-400 mr-[52px]"
+                class="flex-1 text-center text-[12px] text-slate-400 mr-0 sm:mr-[52px]"
                 >output</span
               >
             </div>
             <div
-              class="p-5 text-sm leading-[1.7] min-h-[200px] overflow-x-auto font-mono"
+              class="p-4 sm:p-5 text-xs sm:text-sm leading-[1.7] min-h-[200px] overflow-x-auto font-mono break-words"
             >
               {#if output}
                 <pre
-                  class="text-slate-50 whitespace-pre-wrap wrap-break-word">{output}</pre>
+                  class="text-slate-50 whitespace-pre-wrap break-words">{output}</pre>
               {:else if error}
                 <pre
-                  class="text-amber-500 whitespace-pre-wrap wrap-break-word">Error: {error}</pre>
+                  class="text-amber-500 whitespace-pre-wrap break-words">Error: {error}</pre>
               {:else}
                 <span class="text-slate-400"
                   >// Click "Run Extraction" to start</span
@@ -781,14 +781,14 @@ console.log(result.data);`;
       </section>
 
       <!-- Code Example -->
-      <section id="code" class="py-20 border-b-0 border-slate-700">
+      <section id="code" class="py-12 sm:py-16 lg:py-20 border-b-0 border-slate-700">
         <div class="mb-12">
           <div
             class="text-[11px] tracking-widest text-cyan-400 mb-4 font-semibold"
           >
             // Example
           </div>
-          <h2 class="font-sans text-[28px] font-bold tracking-[-0.02em] mb-3">
+          <h2 class="font-sans text-2xl sm:text-[28px] font-bold tracking-[-0.02em] mb-3">
             Extract product data
           </h2>
           <p class="text-base text-slate-400 max-w-[480px]">
@@ -809,8 +809,8 @@ console.log(result.data);`;
               >Copy</button
             >
           </div>
-          <div class="p-5 text-sm leading-[1.7] overflow-x-auto">
-            <pre><span class="text-[#c586c0]">import</span
+          <div class="p-4 sm:p-5 text-xs sm:text-sm leading-[1.7] overflow-x-auto">
+            <pre class="break-words whitespace-pre-wrap"><span class="text-[#c586c0]">import</span
               > &#123; doThis &#125; <span class="text-[#c586c0]">from</span
               > <span class="text-[#ce9178]">"ralphwiggums"</span>;
 <span class="text-[#c586c0]">import</span> &#123; z &#125; <span
@@ -850,14 +850,14 @@ console.<span class="text-[#dcdcaa]">log</span>(result.data);
       </section>
 
       <!-- Cost Calculator -->
-      <section id="pricing" class="py-20 border-b border-slate-700">
+      <section id="pricing" class="py-12 sm:py-16 lg:py-20 border-b border-slate-700">
         <div class="mb-12">
           <div
             class="text-[11px] tracking-widest text-cyan-400 mb-4 font-semibold"
           >
             // Pricing
           </div>
-          <h2 class="font-sans text-[28px] font-bold tracking-[-0.02em] mb-3">
+          <h2 class="font-sans text-2xl sm:text-[28px] font-bold tracking-[-0.02em] mb-3">
             Calculate your costs
           </h2>
           <p class="text-base text-slate-400 max-w-[480px]">
@@ -866,8 +866,8 @@ console.<span class="text-[#dcdcaa]">log</span>(result.data);
           </p>
         </div>
 
-        <div class="bg-slate-800 border border-slate-700 rounded-lg p-8">
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 sm:p-6 lg:p-8">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
             <div class="flex flex-col gap-2">
               <label
                 for="concurrent"
@@ -880,7 +880,7 @@ console.<span class="text-[#dcdcaa]">log</span>(result.data);
                 bind:value={concurrent}
                 min="1"
                 max="100"
-                class="w-full px-3.5 py-3 bg-slate-800 border border-slate-700 rounded-md font-mono text-sm text-slate-50 transition-all duration-150 focus:outline-none focus:border-cyan-400"
+                class="w-full px-3.5 py-3 bg-slate-800 border border-slate-700 rounded-md font-mono text-xs sm:text-sm text-slate-50 transition-all duration-150 focus:outline-none focus:border-cyan-400"
               />
             </div>
             <div class="flex flex-col gap-2">
@@ -895,7 +895,7 @@ console.<span class="text-[#dcdcaa]">log</span>(result.data);
                 bind:value={hoursPerDay}
                 min="1"
                 max="24"
-                class="w-full px-3.5 py-3 bg-slate-800 border border-slate-700 rounded-md font-mono text-sm text-slate-50 transition-all duration-150 focus:outline-none focus:border-cyan-400"
+                class="w-full px-3.5 py-3 bg-slate-800 border border-slate-700 rounded-md font-mono text-xs sm:text-sm text-slate-50 transition-all duration-150 focus:outline-none focus:border-cyan-400"
               />
             </div>
             <div class="flex flex-col gap-2">
@@ -910,7 +910,7 @@ console.<span class="text-[#dcdcaa]">log</span>(result.data);
                 bind:value={tasksPerHour}
                 min="1"
                 max="1000"
-                class="w-full px-3.5 py-3 bg-slate-800 border border-slate-700 rounded-md font-mono text-sm text-slate-50 transition-all duration-150 focus:outline-none focus:border-cyan-400"
+                class="w-full px-3.5 py-3 bg-slate-800 border border-slate-700 rounded-md font-mono text-xs sm:text-sm text-slate-50 transition-all duration-150 focus:outline-none focus:border-cyan-400"
               />
             </div>
             <div class="flex flex-col gap-2">
@@ -925,7 +925,7 @@ console.<span class="text-[#dcdcaa]">log</span>(result.data);
                 bind:value={iterationsPerTask}
                 min="1"
                 max="20"
-                class="w-full px-3.5 py-3 bg-slate-800 border border-slate-700 rounded-md font-mono text-sm text-slate-50 transition-all duration-150 focus:outline-none focus:border-cyan-400"
+                class="w-full px-3.5 py-3 bg-slate-800 border border-slate-700 rounded-md font-mono text-xs sm:text-sm text-slate-50 transition-all duration-150 focus:outline-none focus:border-cyan-400"
               />
             </div>
           </div>
@@ -1024,6 +1024,13 @@ console.<span class="text-[#dcdcaa]">log</span>(result.data);
     background: #22d3ee;
     color: #0f172a;
   }
+  * {
+    box-sizing: border-box;
+  }
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -1113,5 +1120,13 @@ console.<span class="text-[#dcdcaa]">log</span>(result.data);
   }
   .animate-pulse-glow {
     animation: pulse-glow 4s ease-in-out infinite;
+  }
+  @media (max-width: 640px) {
+    .hover\:scale-\[1\.02\] {
+      transform: none;
+    }
+    .hover\:scale-\[1\.02\]:hover {
+      transform: scale(1.01);
+    }
   }
 </style>
