@@ -91,34 +91,36 @@ jobs:
 
       - name: Ralph Loop - Health Check with Retry Loop (Max 5)
         id: route-floop
-        uses: nick-fields/retry-action@v2
-        with:
-          timeout_minutes: 5
-          max_attempts: ${{ env.MAX_RETRIES }}
-          retry_wait_seconds: ${{ env.RETRY_DELAY }}
-          on_retry_command: |
-            echo "⚠️ Route check failed (attempt ${{ env.RETRY_ATTEMPT }}/${{ env.MAX_RETRIES }})"
-            echo "Waiting ${{ env.RETRY_DELAY }}s before retry..."
-          command: |
-            STAGE="pr-${{ github.event.number }}"
-            URL="https://$STAGE.api.coey.dev"
+        run: |
+          STAGE="pr-${{ github.event.number }}"
+          URL="https://$STAGE.api.coey.dev"
+          MAX_ATTEMPTS=${{ env.MAX_RETRIES }}
+          RETRY_DELAY=${{ env.RETRY_DELAY }}
 
-            echo "🔄 Ralph Loop: Checking health endpoint at $URL"
-            echo "Attempt: ${{ steps.route-floop.outputs.attempt }}"
-
-            # Check health endpoint
-            RESPONSE=$(curl -s -w "\n%{http_code}" -o /dev/null "$URL/health")
-
+          echo "🔄 Ralph Loop: Starting health check for $URL"
+          
+          for attempt in $(seq 1 $MAX_ATTEMPTS); do
+            echo "Attempt $attempt/$MAX_ATTEMPTS: Checking health endpoint..."
+            
+            RESPONSE=$(curl -s -w "%{http_code}" -o /dev/null "$URL/health")
+            
             if [ "$RESPONSE" = "200" ]; then
-              echo "✅ Health check passed!"
+              echo "✅ Health check passed on attempt $attempt!"
               exit 0
             else
               echo "❌ Health check failed with status: $RESPONSE"
-              exit 1
+              if [ $attempt -lt $MAX_ATTEMPTS ]; then
+                echo "⚠️ Waiting ${RETRY_DELAY}s before retry..."
+                sleep $RETRY_DELAY
+              fi
             fi
+          done
+          
+          echo "❌ Health check failed after $MAX_ATTEMPTS attempts"
+          exit 1
 
       - name: Run demo test suite
-        if: steps.route-floop.outputs.success == 'true'
+        if: success()
         run: |
           STAGE="pr-${{ github.event.number }}"
           URL="https://$STAGE.coey.dev"
@@ -139,7 +141,7 @@ jobs:
             **URL:** https://${stage}.api.coey.dev
 
             ---
-            *Ralph Loop completed with ${{ steps.route-floop.outputs.attempt || 'unknown' }} attempts*`;
+            *Ralph Loop completed*`;
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -180,21 +182,32 @@ jobs:
         run: sleep 30
 
       - name: Ralph Loop - Staging Health Check
-        uses: nick-fields/retry-action@v2
-        with:
-          timeout_minutes: 5
-          max_attempts: 5
-          retry_wait_seconds: 5
-          command: |
-            echo "🔄 Checking staging health..."
-            RESPONSE=$(curl -s -w "\n%{http_code}" -o /dev/null https://ralphwiggums-staging.api.coey.dev/health)
+        run: |
+          URL="https://ralphwiggums-staging.api.coey.dev/health"
+          MAX_ATTEMPTS=5
+          RETRY_DELAY=5
+
+          echo "🔄 Starting staging health check..."
+          
+          for attempt in $(seq 1 $MAX_ATTEMPTS); do
+            echo "Attempt $attempt/$MAX_ATTEMPTS: Checking staging health..."
+            
+            RESPONSE=$(curl -s -w "%{http_code}" -o /dev/null "$URL")
+            
             if [ "$RESPONSE" = "200" ]; then
-              echo "✅ Staging health check passed"
+              echo "✅ Staging health check passed on attempt $attempt!"
               exit 0
             else
               echo "❌ Staging health check failed: $RESPONSE"
-              exit 1
+              if [ $attempt -lt $MAX_ATTEMPTS ]; then
+                echo "⚠️ Waiting ${RETRY_DELAY}s before retry..."
+                sleep $RETRY_DELAY
+              fi
             fi
+          done
+          
+          echo "❌ Staging health check failed after $MAX_ATTEMPTS attempts"
+          exit 1
 
   deploy-prod:
     name: Deploy to Production
@@ -228,23 +241,32 @@ jobs:
         run: sleep 30
 
       - name: Ralph Loop - Production Health Check
-        uses: nick-fields/retry-action@v2
-        with:
-          timeout_minutes: 5
-          max_attempts: 5
-          retry_wait_seconds: 5
-          on_retry_command: |
-            echo "⚠️ Production health check failed, retrying..."
-          command: |
-            echo "🔄 Checking production health..."
-            RESPONSE=$(curl -s -w "\n%{http_code}" -o /dev/null https://ralphwiggums-api.coey.dev/health)
+        run: |
+          URL="https://ralphwiggums-api.coey.dev/health"
+          MAX_ATTEMPTS=5
+          RETRY_DELAY=5
+
+          echo "🔄 Starting production health check..."
+          
+          for attempt in $(seq 1 $MAX_ATTEMPTS); do
+            echo "Attempt $attempt/$MAX_ATTEMPTS: Checking production health..."
+            
+            RESPONSE=$(curl -s -w "%{http_code}" -o /dev/null "$URL")
+            
             if [ "$RESPONSE" = "200" ]; then
-              echo "✅ Production health check passed"
+              echo "✅ Production health check passed on attempt $attempt!"
               exit 0
             else
               echo "❌ Production health check failed: $RESPONSE"
-              exit 1
+              if [ $attempt -lt $MAX_ATTEMPTS ]; then
+                echo "⚠️ Waiting ${RETRY_DELAY}s before retry..."
+                sleep $RETRY_DELAY
+              fi
             fi
+          done
+          
+          echo "❌ Production health check failed after $MAX_ATTEMPTS attempts"
+          exit 1
 
       - name: Run production demo test
         run: |
