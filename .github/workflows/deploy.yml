@@ -77,6 +77,9 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Build project
+        run: bun run build
+
       - name: Deploy to environment
         run: bun alchemy deploy --stage ${{ env.STAGE }}
         env:
@@ -218,6 +221,9 @@ jobs:
 
       - name: Install dependencies
         run: bun install
+
+      - name: Build project
+        run: bun run build
 
       - name: Retry deployment (Auto-heal)
         run: |
