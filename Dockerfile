@@ -14,5 +14,5 @@ COPY . .
 # Expose port
 EXPOSE 8081
 
-# Start the server
-CMD ["bun", "run", "server.js"]
+# Start the container server (has /do, /health endpoints)
+CMD ["bun", "run", "container/server.ts"]
